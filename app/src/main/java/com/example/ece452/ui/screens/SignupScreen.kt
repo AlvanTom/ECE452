@@ -18,12 +18,13 @@ import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.theme.primaryLight
 
 @Composable
-fun LoginScreen(
+fun SignupScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
 
     Box(
         modifier = modifier
@@ -61,9 +62,18 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Sign in",
+                        text = "Create Account",
                         style = AppTypography.titleMedium.copy(color = primaryLight),
                         modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
                         value = username,
@@ -84,6 +94,16 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Confirm Password") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
                     Button(
                         onClick = { /* Handle sign in */ },
                         modifier = Modifier
@@ -91,60 +111,26 @@ fun LoginScreen(
                             .padding(bottom = 8.dp),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("Sign in")
+                        Text("Create Account")
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "or sign in with",
-                style = AppTypography.bodyMedium.copy(color = primaryLight),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = { /* Handle Google sign-in */ },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Google")
-                }
-                OutlinedButton(
-                    onClick = { /* Handle Facebook sign-in */ },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Facebook")
-                }
-                OutlinedButton(
-                    onClick = { /* Handle Apple sign-in */ },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Apple")
-                }
-                OutlinedButton(
-                    onClick = { /* Handle Microsoft sign-in */ },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Microsoft")
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Don't have an account? Sign up instead",
+                text = "Have an account? Log in instead",
                 style = AppTypography.bodyMedium.copy(color = primaryLight),
                 modifier = Modifier
                     .padding(bottom = 8.dp)
-                    .clickable { navController.navigate("signup") }
+                    .clickable { navController.navigate("login") }
             )
+
         }
     }
 }
 
 @Composable
-fun SocialLoginButton(label: String) {
+fun SocialSignupButton(label: String) {
     Surface(
         shape = RoundedCornerShape(50),
         shadowElevation = 2.dp,
