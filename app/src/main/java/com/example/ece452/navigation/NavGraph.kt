@@ -8,27 +8,38 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.ece452.ui.components.BottomBar
 import com.example.ece452.ui.screens.FeedScreen
 import com.example.ece452.ui.screens.LoginScreen
 import com.example.ece452.ui.screens.PostScreen
 import com.example.ece452.ui.screens.SessionsScreen
+import com.example.ece452.ui.screens.SignupScreen
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
     val navController = rememberNavController()
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry.value?.destination?.route
 
     Scaffold(
-        bottomBar = { BottomBar(navController = navController) },
+        bottomBar = {
+            if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
+                BottomBar(navController = navController)
+            }
+        },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Feed.name,
+            startDestination = Routes.Signup.name,
             modifier = modifier.padding(innerPadding),
         ) {
             composable(Routes.Login.name) {
-                LoginScreen()
+                LoginScreen(navController = navController)
+            }
+            composable(Routes.Signup.name) {
+                SignupScreen(navController = navController)
             }
             composable(Routes.Feed.name) {
                 FeedScreen()
