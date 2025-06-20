@@ -5,14 +5,28 @@ android/.idea/
 android/*.iml
 android/build/
 android/app/build/
-android/app/google-services.json
 
-# Firebase
+
+# Firebase Backend
 backend/node_modules/
 backend/.firebase/
 backend/firebase-debug.log
 backend/firestore-debug.log
 backend/ui-debug.log
+backend/functions/node_modules/
+backend/functions/lib/
+backend/functions/.firebase/
+backend/functions/firebase-debug.log
+backend/functions/firestore-debug.log
+backend/functions/ui-debug.log
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
 
 # IDE
 .idea/
