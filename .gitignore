@@ -5,6 +5,7 @@ android/.idea/
 android/*.iml
 android/build/
 android/app/build/
+android/app/google-services.json
 
 # Firebase
 backend/node_modules/
