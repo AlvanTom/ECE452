@@ -1,15 +1,24 @@
+# Android
+android/.gradle/
+android/local.properties
+android/.idea/
+android/*.iml
+android/build/
+android/app/build/
+
+# Firebase
+backend/node_modules/
+backend/.firebase/
+backend/firebase-debug.log
+backend/firestore-debug.log
+backend/ui-debug.log
+
+# IDE
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+
+# OS
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# Logs
+*.log
