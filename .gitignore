@@ -1,15 +1,39 @@
+# Android
+android/.gradle/
+android/local.properties
+android/.idea/
+android/*.iml
+android/build/
+android/app/build/
+
+
+# Firebase Backend
+backend/node_modules/
+backend/.firebase/
+backend/firebase-debug.log
+backend/firestore-debug.log
+backend/ui-debug.log
+backend/functions/node_modules/
+backend/functions/lib/
+backend/functions/.firebase/
+backend/functions/firebase-debug.log
+backend/functions/firestore-debug.log
+backend/functions/ui-debug.log
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# IDE
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+
+# OS
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# Logs
+*.log

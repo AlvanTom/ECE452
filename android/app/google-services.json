@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "653439201657",
+    "project_id": "climbr-9208c",
+    "storage_bucket": "climbr-9208c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653439201657:android:25d2df1b176fc312f4bfa8",
+        "android_client_info": {
+          "package_name": "com.example.ece452"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjOvYKj7Z0JXWtTiTrb06kGmDjQ00bIww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
