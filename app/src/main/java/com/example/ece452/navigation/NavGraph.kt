@@ -32,7 +32,7 @@ fun AppNavHost(modifier: Modifier = Modifier){
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Signup.name,
+            startDestination = Routes.Login.name,
             modifier = modifier.padding(innerPadding),
         ) {
             composable(Routes.Login.name) {

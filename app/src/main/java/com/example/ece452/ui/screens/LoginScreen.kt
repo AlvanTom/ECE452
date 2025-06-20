@@ -85,7 +85,11 @@ fun LoginScreen(
                             .padding(bottom = 16.dp)
                     )
                     Button(
-                        onClick = { /* Handle sign in */ },
+                        onClick = {
+                            navController.navigate("feed") {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
