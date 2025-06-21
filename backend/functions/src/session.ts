@@ -75,7 +75,7 @@ export const createSession = functions.https.onCall(async (data) => {
   
   });
 
-export const getSession = functions.https.onCall(async (data) => {
+export const getSessionByID = functions.https.onCall(async (data) => {
     const { sessionId }: { sessionId: string } = data.data;
     
     if (!sessionId) {
