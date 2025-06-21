@@ -44,3 +44,5 @@ export const getUsers = functions.https.onCall(
     }
   }
 );
+
+export { createUser } from "./user";
