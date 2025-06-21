@@ -17,4 +17,14 @@ class AuthService {
             null
         }
     }
+
+    suspend fun signIn(email: String, password: String): FirebaseUser? {
+        return try {
+            val result = auth.signInWithEmailAndPassword(email, password).await()
+            result.user
+        } catch (e: Exception) {
+            // Handle exceptions
+            null
+        }
+    }
 } 

@@ -12,7 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.ece452.ui.login.LoginState
+import com.example.ece452.ui.login.LoginViewModel
 import com.example.ece452.ui.theme.AppTypography
 import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.theme.primaryLight
@@ -20,10 +23,23 @@ import com.example.ece452.ui.theme.primaryLight
 @Composable
 fun LoginScreen(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    loginViewModel: LoginViewModel = viewModel()
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val loginState by loginViewModel.loginState.collectAsState()
+
+    LaunchedEffect(loginState) {
+        if (loginState is LoginState.Success) {
+            navController.navigate("feed") {
+                // Clear back stack
+                popUpTo(navController.graph.startDestinationId) {
+                    inclusive = true
+                }
+            }
+        }
+    }
 
     Box(
         modifier = modifier
@@ -66,9 +82,9 @@ fun LoginScreen(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text("Username") },
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -86,16 +102,26 @@ fun LoginScreen(
                     )
                     Button(
                         onClick = {
-                            navController.navigate("feed") {
-                                popUpTo("login") { inclusive = true }
-                            }
+                            loginViewModel.signIn(email, password)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(6.dp),
+                        enabled = loginState !is LoginState.Loading
                     ) {
-                        Text("Sign in")
+                        if (loginState is LoginState.Loading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Sign in")
+                        }
+                    }
+                    if (loginState is LoginState.Error) {
+                        Text(
+                            text = (loginState as LoginState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
                 }
             }
