@@ -43,4 +43,42 @@ class FunctionsService {
         )
         return callFunction("createUser", data)
     }
+    
+    suspend fun getUserSessions(uid: String): Result<Map<String, Any>?> {
+        val data = mapOf(
+            "uid" to uid
+        )
+        return callFunction("getUserSessions", data)
+    }
+    
+    suspend fun getActiveSessions(uid: String): Result<Map<String, Any>?> {
+        val data = mapOf(
+            "uid" to uid
+        )
+        return callFunction("getActiveSessions", data)
+    }
+    
+    suspend fun getSessionByID(sessionId: String): Result<Map<String, Any>?> {
+        val data = mapOf(
+            "sessionId" to sessionId
+        )
+        return callFunction("getSessionByID", data)
+    }
+
+    suspend fun createSession(title: String, location: String, gymName: String?): Result<Map<String, Any>?> {
+        val uid = FirebaseConfig.auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        val sessionData = mutableMapOf<String, Any>(
+            "uid" to uid,
+            "title" to title,
+            "location" to location,
+            "isIndoor" to true, // Defaulting to indoor
+            "routes" to emptyList<Map<String, Any>>() // Start with no routes
+        )
+
+        if (gymName != null && gymName.isNotBlank()) {
+            sessionData["gymName"] = gymName
+        }
+
+        return callFunction("createSession", sessionData)
+    }
 } 

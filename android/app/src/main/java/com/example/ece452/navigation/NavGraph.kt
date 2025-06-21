@@ -15,6 +15,8 @@ import com.example.ece452.ui.screens.LoginScreen
 import com.example.ece452.ui.screens.PostScreen
 import com.example.ece452.ui.screens.NewSessionScreen
 import com.example.ece452.ui.screens.SignupScreen
+import com.example.ece452.ui.screens.SessionHistoryScreen
+import com.example.ece452.ui.screens.ActiveSessionScreen
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
@@ -45,13 +47,23 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 FeedScreen()
             }
             composable(Routes.Sessions.name) {
-                NewSessionScreen(navController = navController)
+                SessionHistoryScreen(navController = navController)
             }
             composable(Routes.Posts.name) {
                 PostScreen()
             }
             composable(Routes.NewSession.name) {
                 NewSessionScreen(navController = navController)
+            }
+            composable(Routes.SessionHistory.name) {
+                SessionHistoryScreen(navController = navController)
+            }
+            composable(Routes.ActiveSession.name) {
+                ActiveSessionScreen(navController = navController)
+            }
+            composable("${Routes.ActiveSession.name}/{sessionId}") { backStackEntry ->
+                val sessionId = backStackEntry.arguments?.getString("sessionId")
+                ActiveSessionScreen(navController = navController, sessionId = sessionId)
             }
         }
     }
