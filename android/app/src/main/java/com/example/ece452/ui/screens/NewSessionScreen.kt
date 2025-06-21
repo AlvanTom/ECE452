@@ -16,15 +16,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
+import com.example.ece452.ui.viewmodels.NewSessionState
+import com.example.ece452.ui.viewmodels.NewSessionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewSessionScreen(navController: NavController) {
+fun NewSessionScreen(
+    navController: NavController,
+    viewModel: NewSessionViewModel = viewModel()
+) {
     var title by remember { mutableStateOf("Title") }
     var gym by remember { mutableStateOf("Gym") }
     var wallName by remember { mutableStateOf("Wall Name") }
@@ -33,6 +39,26 @@ fun NewSessionScreen(navController: NavController) {
 
     val datePickerState = rememberDatePickerState()
     val showDatePicker = remember { mutableStateOf(false) }
+    
+    val createState by viewModel.createState.collectAsState()
+
+    LaunchedEffect(createState) {
+        when (val state = createState) {
+            is NewSessionState.Success -> {
+                // Navigate to the active session screen with the new session ID
+                navController.navigate("${Routes.ActiveSession.name}/${state.sessionId}") {
+                    // Optional: popUpTo(Routes.SessionHistory.name) to remove backstack
+                }
+                viewModel.resetState() // Reset state after navigation
+            }
+            is NewSessionState.Error -> {
+                // TODO: Show a snackbar or toast with the error message
+            }
+            else -> {
+                // Idle or Loading, do nothing
+            }
+        }
+    }
 
     Scaffold(
         content = { innerPadding ->
@@ -113,21 +139,29 @@ fun NewSessionScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
+//                        if (createState !is NewSessionState.Loading) {
+//                            viewModel.createSession(title, gym, wallName)
+//                        }
                         navController.navigate(Routes.Route.name)
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight)
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight),
+                    enabled = createState !is NewSessionState.Loading
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Start Session",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Start Session", fontSize = 16.sp)
+                    if (createState is NewSessionState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Start Session",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Start Session", fontSize = 16.sp)
+                    }
                 }
             }
         }

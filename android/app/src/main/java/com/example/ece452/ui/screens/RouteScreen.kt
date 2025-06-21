@@ -185,7 +185,7 @@ fun RouteScreen(navController: NavController) {
                     label = { Text("Notes (optional)") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp) // multiline height
+                        .height(120.dp)
                         .padding(vertical = 8.dp),
                     singleLine = false,
                     maxLines = 5
