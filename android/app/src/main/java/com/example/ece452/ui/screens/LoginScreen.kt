@@ -99,7 +99,7 @@ fun LoginScreen(
                     }
                 }
             }
-
+/*
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "or sign in with",
@@ -134,7 +134,9 @@ fun LoginScreen(
                 ) {
                     Text("Microsoft")
                 }
-            }
+            }*/
+
+
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Don't have an account? Sign up instead",
