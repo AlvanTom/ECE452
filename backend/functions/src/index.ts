@@ -45,5 +45,5 @@ export const getUsers = functions.https.onCall(
   }
 );
 
-// Export session functions
+export { createUser } from "./user";
 export { createSession, getSessionByID } from "./session";

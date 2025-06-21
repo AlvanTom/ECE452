@@ -1,6 +1,7 @@
 package com.example.ece452.firebase
 
 import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
 
 object FirebaseConfig {
@@ -13,5 +14,10 @@ object FirebaseConfig {
     // Firebase Functions instance
     val functions: FirebaseFunctions by lazy {
         FirebaseFunctions.getInstance()
+    }
+
+    // Firebase Auth instance
+    val auth: FirebaseAuth by lazy {
+        FirebaseAuth.getInstance()
     }
 } 
