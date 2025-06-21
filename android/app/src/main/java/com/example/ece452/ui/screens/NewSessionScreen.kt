@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -114,7 +115,9 @@ fun NewSessionScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = { /* TODO: Start session logic */ },
+                    onClick = {
+                        navController.navigate(Routes.Route.name)
+                    },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
