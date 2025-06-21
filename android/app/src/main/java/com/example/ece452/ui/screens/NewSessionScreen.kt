@@ -7,8 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
+import java.util.Date
+import java.util.Locale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,10 +25,11 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewSessionScreen(navController: NavController) {
-    var title by remember { mutableStateOf("Session 4 GRR") }
-    var gym by remember { mutableStateOf("e.g. GRR waterl...") }
-    var wallName by remember { mutableStateOf("Back slab wall") }
-    var date by remember { mutableStateOf("08/17/2025") }
+    var title by remember { mutableStateOf("Title") }
+    var gym by remember { mutableStateOf("Gym") }
+    var wallName by remember { mutableStateOf("Wall Name") }
+    val currentDate = SimpleDateFormat("MM-dd-yyyy", Locale.getDefault()).format(Date())
+    var date by remember { mutableStateOf(currentDate) }
 
     val datePickerState = rememberDatePickerState()
     val showDatePicker = remember { mutableStateOf(false) }
@@ -52,7 +53,6 @@ fun NewSessionScreen(navController: NavController) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -68,7 +68,6 @@ fun NewSessionScreen(navController: NavController) {
                 OutlinedTextField(
                     value = gym,
                     onValueChange = { gym = it },
-                    label = { Text("Gym") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -84,7 +83,6 @@ fun NewSessionScreen(navController: NavController) {
                 OutlinedTextField(
                     value = wallName,
                     onValueChange = { wallName = it },
-                    label = { Text("Wall Name") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -100,7 +98,6 @@ fun NewSessionScreen(navController: NavController) {
                 OutlinedTextField(
                     value = date,
                     onValueChange = { date = it },
-                    label = { Text("Date") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
