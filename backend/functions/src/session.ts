@@ -92,7 +92,19 @@ export const getSessionByID = functions.https.onCall(async (data) => {
     const sessionData = sessionDoc.data();
 
     const routesDoc = await sessionRef.collection("routes").get();
-    const routesData = routesDoc.docs.map((doc) => doc.data());
+    const routesData = await Promise.all(routesDoc.docs.map(async (doc) => {
+        const routeData = doc.data();
+        
+        // Get attempts for this route
+        const attemptsDoc = await doc.ref.collection("attempts").get();
+        const attemptsData = attemptsDoc.docs.map(attemptDoc => attemptDoc.data());
+        
+        return {
+            id: doc.id,
+            ...routeData,
+            attempts: attemptsData
+        };
+    }));
 
     return { sessionId, sessionData, routesData };
 });
