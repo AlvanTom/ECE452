@@ -9,8 +9,6 @@ export const createSession = functions.https.onCall(async (data, context: any) =
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in');
     }
-
-    const authenticatedUid = context.auth.uid;
     
     const {
       uid,
@@ -33,11 +31,6 @@ export const createSession = functions.https.onCall(async (data, context: any) =
         attempts: { success: boolean; createdAt: string }[]; // timestamp from FE
       }[];
     } = data.data;
-    
-    // Verify the user can only create sessions for themselves
-    if (uid !== authenticatedUid) {
-        throw new functions.https.HttpsError('permission-denied', 'User can only create sessions for themselves');
-    }
     
     if (!uid || !title || !location || typeof isIndoor !== 'boolean') {
       throw new functions.https.HttpsError('invalid-argument', 'Missing/Invalid fields: uid, title, location, isIndoor');
@@ -92,8 +85,6 @@ export const getSessionByID = functions.https.onCall(async (data, context: any) 
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in');
     }
-
-    const authenticatedUid = context.auth.uid;
     
     const { sessionId }: { sessionId: string } = data.data;
     
@@ -109,11 +100,6 @@ export const getSessionByID = functions.https.onCall(async (data, context: any) 
     }
 
     const sessionData = sessionDoc.data();
-
-    // Verify the user can only access their own sessions
-    if (sessionData?.userId !== authenticatedUid) {
-        throw new functions.https.HttpsError('permission-denied', 'User can only access their own sessions');
-    }
 
     const routesDoc = await sessionRef.collection("routes").get();
     const routesData = await Promise.all(routesDoc.docs.map(async (doc) => {
@@ -133,22 +119,23 @@ export const getSessionByID = functions.https.onCall(async (data, context: any) 
     return { sessionId, sessionData, routesData };
 });
 
-export const getSessionsByUser = functions.https.onCall(async (data, context: any) => {
+export const getSessionsByUID = functions.https.onCall(async (data, context: any) => {
     // Check if user is authenticated
     if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be logged in');
     }
 
-    const authenticatedUid = context.auth.uid;
     const { uid }: { uid: string } = data.data;
     
     if (!uid) {
         throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
     }
 
-    // Verify the user can only access their own sessions
-    if (uid !== authenticatedUid) {
-        throw new functions.https.HttpsError('permission-denied', 'User can only access their own sessions');
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'User not found');
     }
     
     const sessionsRef = db.collection("sessions").where("userId", "==", uid);
