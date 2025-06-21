@@ -4,10 +4,13 @@ import * as admin from "firebase-admin";
 // Get Firestore instance
 const db = admin.firestore();
 
-export const createSession = functions.https.onCall(async (data, context: any) => {
+export const createSession = functions.https.onCall(async (request) => {
     // Check if user is authenticated
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'User must be logged in');
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in"
+      );
     }
     
     const {
@@ -30,7 +33,7 @@ export const createSession = functions.https.onCall(async (data, context: any) =
         notes?: string;
         attempts: { success: boolean; createdAt: string }[]; // timestamp from FE
       }[];
-    } = data.data;
+    } = request.data;
     
     if (!uid || !title || !location || typeof isIndoor !== 'boolean') {
       throw new functions.https.HttpsError('invalid-argument', 'Missing/Invalid fields: uid, title, location, isIndoor');
@@ -80,13 +83,16 @@ export const createSession = functions.https.onCall(async (data, context: any) =
   
   });
 
-export const getSessionByID = functions.https.onCall(async (data, context: any) => {
+export const getSessionByID = functions.https.onCall(async (request) => {
     // Check if user is authenticated
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'User must be logged in');
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in"
+      );
     }
     
-    const { sessionId }: { sessionId: string } = data.data;
+    const { sessionId }: { sessionId: string } = request.data;
     
     if (!sessionId) {
         throw new functions.https.HttpsError('invalid-argument', 'Session ID is required');
@@ -119,13 +125,16 @@ export const getSessionByID = functions.https.onCall(async (data, context: any) 
     return { sessionId, sessionData, routesData };
 });
 
-export const getSessionsByUID = functions.https.onCall(async (data, context: any) => {
+export const getSessionsByUID = functions.https.onCall(async (request) => {
     // Check if user is authenticated
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'User must be logged in');
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in"
+      );
     }
 
-    const { uid }: { uid: string } = data.data;
+    const { uid }: { uid: string } = request.data;
     
     if (!uid) {
         throw new functions.https.HttpsError('invalid-argument', 'User ID is required');
