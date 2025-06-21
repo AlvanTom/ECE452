@@ -74,3 +74,25 @@ export const createSession = functions.https.onCall(async (data) => {
     return { sessionId: sessionRef.id };
   
   });
+
+export const getSession = functions.https.onCall(async (data) => {
+    const { sessionId }: { sessionId: string } = data.data;
+    
+    if (!sessionId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Session ID is required');
+    }
+    
+    const sessionRef = db.collection("sessions").doc(sessionId);
+    const sessionDoc = await sessionRef.get();
+
+    if (!sessionDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'Session not found');
+    }
+
+    const sessionData = sessionDoc.data();
+
+    const routesDoc = await sessionRef.collection("routes").get();
+    const routesData = routesDoc.docs.map((doc) => doc.data());
+
+    return { sessionId, sessionData, routesData };
+});
