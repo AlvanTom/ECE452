@@ -1,12 +1,12 @@
 package com.example.ece452.navigation
 
-enum class Routes(){
+enum class Routes {
     Login,
     Signup,
     Feed,
     Posts,
     Sessions,
     NewSession,
-    SessionHistory,
+    Route,
     ActiveSession
 }

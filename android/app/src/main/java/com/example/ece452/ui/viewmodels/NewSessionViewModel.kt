@@ -1,4 +1,4 @@
-package com.example.ece452.ui.screens
+package com.example.ece452.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -47,10 +47,12 @@ class NewSessionViewModel : ViewModel() {
                         _createState.value = NewSessionState.Error("Failed to get session ID.")
                     }
                 }.onFailure {
-                    _createState.value = NewSessionState.Error(it.message ?: "An unknown error occurred.")
+                    _createState.value =
+                        NewSessionState.Error(it.message ?: "An unknown error occurred.")
                 }
             } catch (e: Exception) {
-                _createState.value = NewSessionState.Error(e.message ?: "An unexpected error occurred.")
+                _createState.value =
+                    NewSessionState.Error(e.message ?: "An unexpected error occurred.")
             }
         }
     }

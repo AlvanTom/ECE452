@@ -49,7 +49,7 @@ fun ActiveSessionScreen(
                         if (data != null) {
                             val sessionData = data["sessionData"] as? Map<String, Any>
                             val routesData = data["routesData"] as? List<Map<String, Any>>
-                            
+
                             if (sessionData != null) {
                                 session = Session(
                                     id = sessionId,
@@ -147,7 +147,9 @@ fun ActiveSessionScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = { /* TODO: Add new route logic */ },
+                            onClick = {
+                                navController.navigate(Routes.Route.name)
+                            },
                             shape = RoundedCornerShape(50),
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

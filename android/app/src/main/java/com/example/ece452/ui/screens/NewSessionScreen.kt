@@ -7,8 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
+import java.util.Date
+import java.util.Locale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
+import com.example.ece452.ui.viewmodels.NewSessionState
+import com.example.ece452.ui.viewmodels.NewSessionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,10 +31,11 @@ fun NewSessionScreen(
     navController: NavController,
     viewModel: NewSessionViewModel = viewModel()
 ) {
-    var title by remember { mutableStateOf("Session 4 GRR") }
-    var gym by remember { mutableStateOf("e.g. GRR waterl...") }
-    var wallName by remember { mutableStateOf("Back slab wall") }
-    var date by remember { mutableStateOf("08/17/2025") }
+    var title by remember { mutableStateOf("Title") }
+    var gym by remember { mutableStateOf("Gym") }
+    var wallName by remember { mutableStateOf("Wall Name") }
+    val currentDate = SimpleDateFormat("MM-dd-yyyy", Locale.getDefault()).format(Date())
+    var date by remember { mutableStateOf(currentDate) }
 
     val datePickerState = rememberDatePickerState()
     val showDatePicker = remember { mutableStateOf(false) }
@@ -76,7 +79,6 @@ fun NewSessionScreen(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -92,7 +94,6 @@ fun NewSessionScreen(
                 OutlinedTextField(
                     value = gym,
                     onValueChange = { gym = it },
-                    label = { Text("Gym") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -108,7 +109,6 @@ fun NewSessionScreen(
                 OutlinedTextField(
                     value = wallName,
                     onValueChange = { wallName = it },
-                    label = { Text("Wall Name") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -124,7 +124,6 @@ fun NewSessionScreen(
                 OutlinedTextField(
                     value = date,
                     onValueChange = { date = it },
-                    label = { Text("Date") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -140,9 +139,10 @@ fun NewSessionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
-                        if (createState !is NewSessionState.Loading) {
-                            viewModel.createSession(title, gym, wallName)
-                        }
+//                        if (createState !is NewSessionState.Loading) {
+//                            viewModel.createSession(title, gym, wallName)
+//                        }
+                        navController.navigate(Routes.Route.name)
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
