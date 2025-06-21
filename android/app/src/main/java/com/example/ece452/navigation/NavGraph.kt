@@ -13,7 +13,7 @@ import com.example.ece452.ui.components.BottomBar
 import com.example.ece452.ui.screens.FeedScreen
 import com.example.ece452.ui.screens.LoginScreen
 import com.example.ece452.ui.screens.PostScreen
-import com.example.ece452.ui.screens.SessionsScreen
+import com.example.ece452.ui.screens.NewSessionScreen
 import com.example.ece452.ui.screens.SignupScreen
 
 @Composable
@@ -45,10 +45,13 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 FeedScreen()
             }
             composable(Routes.Sessions.name) {
-                SessionsScreen()
+                NewSessionScreen(navController = navController)
             }
             composable(Routes.Posts.name) {
                 PostScreen()
+            }
+            composable(Routes.NewSession.name) {
+                NewSessionScreen(navController = navController)
             }
         }
     }

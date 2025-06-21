@@ -5,5 +5,6 @@ enum class Routes(){
     Signup,
     Feed,
     Posts,
-    Sessions
+    Sessions,
+    NewSession
 }
