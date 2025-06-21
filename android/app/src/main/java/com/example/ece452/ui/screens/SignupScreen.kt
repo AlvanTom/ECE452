@@ -12,7 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.ece452.ui.login.SignupState
+import com.example.ece452.ui.login.SignupViewModel
 import com.example.ece452.ui.theme.AppTypography
 import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.theme.primaryLight
@@ -20,11 +23,25 @@ import com.example.ece452.ui.theme.primaryLight
 @Composable
 fun SignupScreen(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    signupViewModel: SignupViewModel = viewModel()
 ) {
-    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    val signupState by signupViewModel.signupState.collectAsState()
+
+    LaunchedEffect(signupState) {
+        if (signupState is SignupState.Success) {
+            navController.navigate("feed") {
+                // Clear back stack
+                popUpTo(navController.graph.startDestinationId) {
+                    inclusive = true
+                }
+            }
+        }
+    }
 
     Box(
         modifier = modifier
@@ -95,23 +112,40 @@ fun SignupScreen(
                             .padding(bottom = 16.dp)
                     )
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
                         label = { Text("Confirm Password") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp)
+                            .padding(bottom = 16.dp),
+                        isError = password != confirmPassword
                     )
                     Button(
-                        onClick = { /* Handle sign in */ },
+                        onClick = {
+                            if (password == confirmPassword) {
+                                signupViewModel.signup(email, password, username)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(6.dp),
+                        enabled = password == confirmPassword && signupState !is SignupState.Loading
                     ) {
-                        Text("Create Account")
+                        if (signupState is SignupState.Loading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Create Account")
+                        }
+                    }
+                    if (signupState is SignupState.Error) {
+                        Text(
+                            text = (signupState as SignupState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
                 }
             }

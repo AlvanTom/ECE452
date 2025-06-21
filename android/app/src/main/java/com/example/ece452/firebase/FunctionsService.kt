@@ -36,4 +36,11 @@ class FunctionsService {
             Result.failure(e)
         }
     }
+
+    suspend fun createUser(displayName: String): Result<Map<String, Any>?> {
+        val data = mapOf(
+            "displayName" to displayName
+        )
+        return callFunction("createUser", data)
+    }
 } 
