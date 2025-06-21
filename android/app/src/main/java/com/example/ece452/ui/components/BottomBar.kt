@@ -20,18 +20,19 @@ import com.example.ece452.navigation.Routes
 @Composable
 fun BottomBar(navController: NavHostController, modifier: Modifier = Modifier){
     var selectedItem by remember { mutableIntStateOf(0) }
-    val routes = arrayOf(Routes.Feed, Routes.Posts, Routes.Sessions).map { it.name }
+    val routes = arrayOf(Routes.Feed.name, Routes.Posts.name, Routes.NewSession.name)
     val routeIcons = arrayOf(Icons.Outlined.BookmarkBorder, Icons.Outlined.FileUpload, Icons.Outlined.Add)
+    val routeLabels = arrayOf("Feed", "Post", "Sessions")
 
     NavigationBar (modifier = modifier){
-        for ((index, route) in routes.withIndex()) {
+        for (index in routes.indices) {
             NavigationBarItem(
-                icon = { Icon(routeIcons[index], contentDescription = route) },
-                label = { Text(route) },
+                icon = { Icon(routeIcons[index], contentDescription = routeLabels[index]) },
+                label = { Text(routeLabels[index]) },
                 selected = selectedItem == index,
                 onClick = {
                     selectedItem = index
-                    navController.navigate(route)
+                    navController.navigate(routes[index])
                 }
             )
         }
