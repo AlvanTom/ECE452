@@ -20,28 +20,19 @@ class SignupViewModel : ViewModel() {
     fun signup(email: String, password: String, displayName: String) {
         viewModelScope.launch {
             _signupState.value = SignupState.Loading
-            try {
-                val result = authService.signup(email, password)
-                result.onSuccess { authResult ->
-                    // Successfully created user in Auth
-                    val user = authResult.user
-                    if (user != null) {
-                        // Now create the user profile in Firestore
-                        val profileResult = functionsService.createUser(displayName)
-                        profileResult.onSuccess {
-                            _signupState.value = SignupState.Success
-                        }.onFailure {
-                            _signupState.value = SignupState.Error(it.message ?: "Failed to create user profile.")
-                        }
-                    } else {
-                        _signupState.value = SignupState.Error("Signup succeeded but user was not found.")
-                    }
-                }.onFailure {
-                    // Failed to create user in Auth
-                    _signupState.value = SignupState.Error(it.message ?: "Failed to sign up.")
+            val user = authService.signUp(email, password)
+            if (user != null) {
+                // Force refresh the token to solve race condition
+                user.getIdToken(true).await()
+
+                val result = functionsService.createUser(displayName)
+                if (result.isSuccess) {
+                    _signupState.value = SignupState.Success
+                } else {
+                    _signupState.value = SignupState.Error("Failed to create user profile.")
                 }
-            } catch (e: Exception) {
-                _signupState.value = SignupState.Error(e.message ?: "An unexpected error occurred.")
+            } else {
+                _signupState.value = SignupState.Error("Failed to sign up.")
             }
         }
     }
