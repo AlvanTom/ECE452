@@ -193,7 +193,7 @@ fun RouteScreen(
                     label = { Text("Notes (optional)") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
+                        .height(120.dp) // multiline height
                         .padding(vertical = 8.dp),
                     singleLine = false,
                     maxLines = 5

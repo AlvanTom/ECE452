@@ -46,4 +46,4 @@ export const getUsers = functions.https.onCall(
 );
 
 export { createUser } from "./user";
-export { createSession, getSessionByID, getUserSessions, getActiveSessions } from "./session";
+export { createSession, getSessionByID } from "./session";

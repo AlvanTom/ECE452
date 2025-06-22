@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
@@ -132,6 +131,13 @@ fun NewSessionScreen(
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight),
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Start Session",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Start Session", fontSize = 16.sp)
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Start Session",
