@@ -18,23 +18,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ece452.data.Route
-import com.example.ece452.data.Session
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
 import com.example.ece452.ui.viewmodels.SessionViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActiveSessionScreen(
     navController: NavController,
-    sessionViewModel: SessionViewModel,
-    sessionId: String? = null
+    sessionViewModel: SessionViewModel
 ) {
     val session by sessionViewModel.activeSession.collectAsState()
-    var isLoading by remember { mutableStateOf(false) } // No longer loading from backend
-    var error by remember { mutableStateOf<String?>(null) }
     
     Scaffold { innerPadding ->
         Box(
@@ -43,82 +37,68 @@ fun ActiveSessionScreen(
                 .background(backgroundLight)
                 .padding(innerPadding)
         ) {
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                error != null -> {
+            if (session == null) {
+                Text(
+                    text = "No active session found.",
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text = error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
+                        text = session!!.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
-                }
-                session == null -> {
-                    // This case is now mainly for when a real session isn't found
-                    Text(
-                        text = "Session not found.",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            text = session!!.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 16.dp)
+                        items(session!!.routes) { route ->
+                            RouteListItem(route = route)
+                            Divider()
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            navController.navigate(Routes.Route.name)
+                        },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add a new route")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add a new route")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = {
+                             sessionViewModel.endActiveSession()
+                             navController.navigate(Routes.Sessions.name) {
+                                 popUpTo(Routes.Sessions.name) { inclusive = true }
+                             }
+                        },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
                         )
-
-                        LazyColumn(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            items(session!!.routes) { route ->
-                                RouteListItem(route = route)
-                                Divider()
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = {
-                                navController.navigate(Routes.Route.name)
-                            },
-                            shape = RoundedCornerShape(50),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add a new route")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Add a new route")
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = {
-                                 sessionViewModel.endActiveSession()
-                                 navController.navigate(Routes.Sessions.name) {
-                                     popUpTo(Routes.Sessions.name) { inclusive = true }
-                                 }
-                            },
-                            shape = RoundedCornerShape(50),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        ) {
-                            Icon(Icons.Default.Output, contentDescription = "End Session")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("End Session")
-                        }
+                    ) {
+                        Icon(Icons.Default.Output, contentDescription = "End Session")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("End Session")
                     }
                 }
             }
@@ -143,14 +123,11 @@ fun RouteListItem(route: Route) {
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        // Placeholder for the collapsible list of attempts
-        // For now, it's just empty space as requested.
-        // We will implement the attempt list here later.
     }
 }
 
 @Composable
-fun SessionHeader(session: Session) {
+fun SessionHeader(session: com.example.ece452.data.Session) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
