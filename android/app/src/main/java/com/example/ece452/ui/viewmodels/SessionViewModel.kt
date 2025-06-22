@@ -1,6 +1,7 @@
 package com.example.ece452.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import com.example.ece452.data.Attempt
 import com.example.ece452.data.Route
 import com.example.ece452.data.Session
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,4 +57,25 @@ class SessionViewModel : ViewModel() {
         }
         _activeSession.value = null
     }
+
+    fun addAttemptToRoute(routeId: String, isSuccess: Boolean) {
+        _activeSession.update { currentSession ->
+            currentSession?.let { session ->
+                val updatedRoutes = session.routes.map { route ->
+                    if (route.id == routeId) {
+                        val newAttempt = Attempt(
+                            id = UUID.randomUUID().toString(),
+                            success = isSuccess,
+                            createdAt = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                        )
+                        route.copy(attempts = route.attempts + newAttempt)
+                    } else {
+                        route
+                    }
+                }
+                session.copy(routes = updatedRoutes)
+            }
+        }
+    }
+
 } 

@@ -8,5 +8,6 @@ enum class Routes(){
     Sessions,
     NewSession,
     Route,
-    ActiveSession
+    ActiveSession,
+    Attempt
 }
