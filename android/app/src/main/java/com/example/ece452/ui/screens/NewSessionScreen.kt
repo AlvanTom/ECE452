@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
-import com.example.ece452.ui.viewmodels.NewSessionState
-import com.example.ece452.ui.viewmodels.NewSessionViewModel
 import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,8 +27,7 @@ import java.util.*
 @Composable
 fun NewSessionScreen(
     navController: NavController,
-    sessionViewModel: SessionViewModel,
-    viewModel: NewSessionViewModel = viewModel()
+    sessionViewModel: SessionViewModel
 ) {
     var title by remember { mutableStateOf("Title") }
     var gym by remember { mutableStateOf("Gym") }
@@ -40,8 +37,6 @@ fun NewSessionScreen(
 
     val datePickerState = rememberDatePickerState()
     val showDatePicker = remember { mutableStateOf(false) }
-    
-    val createState by viewModel.createState.collectAsState()
 
     Scaffold(
         content = { innerPadding ->
@@ -131,13 +126,6 @@ fun NewSessionScreen(
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Start Session",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Start Session", fontSize = 16.sp)
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Start Session",
