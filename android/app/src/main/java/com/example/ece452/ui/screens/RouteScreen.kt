@@ -256,11 +256,11 @@ fun RouteScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Save,
-                        contentDescription = "Save Session",
+                        contentDescription = "Save Route",
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Save Session", fontSize = 16.sp)
+                    Text(text = "Save Route", fontSize = 16.sp)
                 }
             }
         }
