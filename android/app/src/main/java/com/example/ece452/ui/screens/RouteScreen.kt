@@ -40,11 +40,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.ece452.data.Attempt
+import com.example.ece452.data.Route
+import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.theme.primaryContainerLight
+import com.example.ece452.ui.viewmodels.SessionViewModel
+import java.util.UUID
 
 @Composable
-fun RouteScreen(navController: NavController) {
+fun RouteScreen(
+    navController: NavController,
+    sessionViewModel: SessionViewModel
+) {
 
     var routeName by remember { mutableStateOf("") }
     var selectedVDifficulty by remember { mutableStateOf<Int?>(null) }
@@ -195,7 +203,16 @@ fun RouteScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        navController.navigate("some_next_screen")
+                        val newRoute = Route(
+                            id = UUID.randomUUID().toString(),
+                            routeName = routeName,
+                            difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                            notes = notes,
+                            tags = tags,
+                            attempts = emptyList<Attempt>()
+                        )
+                        sessionViewModel.addRouteToActiveSession(newRoute)
+                        navController.popBackStack()
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier

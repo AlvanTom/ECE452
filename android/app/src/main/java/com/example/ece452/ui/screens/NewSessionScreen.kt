@@ -19,12 +19,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
+import com.example.ece452.ui.viewmodels.NewSessionState
+import com.example.ece452.ui.viewmodels.NewSessionViewModel
+import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewSessionScreen(navController: NavController) {
+fun NewSessionScreen(
+    navController: NavController,
+    sessionViewModel: SessionViewModel,
+    viewModel: NewSessionViewModel = viewModel()
+) {
     var title by remember { mutableStateOf("Title") }
     var gym by remember { mutableStateOf("Gym") }
     var wallName by remember { mutableStateOf("Wall Name") }
@@ -33,6 +40,8 @@ fun NewSessionScreen(navController: NavController) {
 
     val datePickerState = rememberDatePickerState()
     val showDatePicker = remember { mutableStateOf(false) }
+    
+    val createState by viewModel.createState.collectAsState()
 
     Scaffold(
         content = { innerPadding ->
@@ -113,14 +122,22 @@ fun NewSessionScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
-                        navController.navigate(Routes.Route.name)
+                        sessionViewModel.createSession(title, gym, wallName)
+                        navController.navigate(Routes.ActiveSession.name)
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight)
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight),
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Start Session",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Start Session", fontSize = 16.sp)
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Start Session",

@@ -16,12 +16,17 @@ import com.example.ece452.ui.screens.PostScreen
 import com.example.ece452.ui.screens.NewSessionScreen
 import com.example.ece452.ui.screens.RouteScreen
 import com.example.ece452.ui.screens.SignupScreen
+import com.example.ece452.ui.screens.SessionHistoryScreen
+import com.example.ece452.ui.screens.ActiveSessionScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ece452.ui.viewmodels.SessionViewModel
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
     val navController = rememberNavController()
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
+    val sessionViewModel: SessionViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -46,16 +51,23 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 FeedScreen()
             }
             composable(Routes.Sessions.name) {
-                NewSessionScreen(navController = navController)
+                SessionHistoryScreen(navController = navController, sessionViewModel = sessionViewModel)
             }
             composable(Routes.Posts.name) {
                 PostScreen()
             }
             composable(Routes.NewSession.name) {
-                NewSessionScreen(navController = navController)
+                NewSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
             }
             composable(Routes.Route.name) {
-                RouteScreen(navController = navController)
+                RouteScreen(navController = navController, sessionViewModel = sessionViewModel)
+            }
+//            composable("${Routes.ActiveSession.name}/{sessionId}") { backStackEntry ->
+//                val sessionId = backStackEntry.arguments?.getString("sessionId")
+//                ActiveSessionScreen(navController = navController, sessionId = sessionId)
+//            }
+            composable(Routes.ActiveSession.name) {
+                ActiveSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
             }
         }
     }
