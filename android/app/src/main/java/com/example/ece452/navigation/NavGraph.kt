@@ -19,6 +19,8 @@ import com.example.ece452.ui.screens.SignupScreen
 import com.example.ece452.ui.screens.SessionHistoryScreen
 import com.example.ece452.ui.screens.ActiveSessionScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ece452.data.Attempt
+import com.example.ece452.ui.screens.AttemptScreen
 import com.example.ece452.ui.viewmodels.SessionViewModel
 
 @Composable
@@ -68,6 +70,9 @@ fun AppNavHost(modifier: Modifier = Modifier){
 //            }
             composable(Routes.ActiveSession.name) {
                 ActiveSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
+            }
+            composable(Routes.Attempt.name) {
+                AttemptScreen(navController = navController, sessionViewModel = sessionViewModel)
             }
         }
     }

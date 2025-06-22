@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -44,7 +45,10 @@ import com.example.ece452.data.Attempt
 import com.example.ece452.data.Route
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.backgroundLight
-import com.example.ece452.ui.theme.primaryContainerLight
+import com.example.ece452.ui.theme.primaryContainerDark
+import com.example.ece452.ui.theme.secondaryContainerDark
+import com.example.ece452.ui.theme.secondaryContainerLight
+import com.example.ece452.ui.theme.secondaryLight
 import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.util.UUID
 
@@ -212,21 +216,51 @@ fun RouteScreen(
                             attempts = emptyList<Attempt>()
                         )
                         sessionViewModel.addRouteToActiveSession(newRoute)
+                        navController.navigate(Routes.Attempt.name)
+                    },
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = secondaryLight)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Attempt",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Add Attempt", fontSize = 16.sp)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        val newRoute = Route(
+                            id = UUID.randomUUID().toString(),
+                            routeName = routeName,
+                            difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                            notes = notes,
+                            tags = tags,
+                            attempts = emptyList<Attempt>()
+                        )
+                        sessionViewModel.addRouteToActiveSession(newRoute)
                         navController.popBackStack()
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight)
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerDark)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Route",
+                        imageVector = Icons.Default.Save,
+                        contentDescription = "Save Session",
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Add Route", fontSize = 16.sp)
+                    Text(text = "Save Session", fontSize = 16.sp)
                 }
             }
         }
