@@ -22,6 +22,7 @@ import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
 import com.example.ece452.ui.viewmodels.NewSessionState
 import com.example.ece452.ui.viewmodels.NewSessionViewModel
+import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,6 +30,7 @@ import java.util.*
 @Composable
 fun NewSessionScreen(
     navController: NavController,
+    sessionViewModel: SessionViewModel,
     viewModel: NewSessionViewModel = viewModel()
 ) {
     var title by remember { mutableStateOf("Title") }
@@ -41,24 +43,6 @@ fun NewSessionScreen(
     val showDatePicker = remember { mutableStateOf(false) }
     
     val createState by viewModel.createState.collectAsState()
-
-    LaunchedEffect(createState) {
-        when (val state = createState) {
-            is NewSessionState.Success -> {
-                // Navigate to the active session screen with the new session ID
-                navController.navigate("${Routes.ActiveSession.name}/${state.sessionId}") {
-                    // Optional: popUpTo(Routes.SessionHistory.name) to remove backstack
-                }
-                viewModel.resetState() // Reset state after navigation
-            }
-            is NewSessionState.Error -> {
-                // TODO: Show a snackbar or toast with the error message
-            }
-            else -> {
-                // Idle or Loading, do nothing
-            }
-        }
-    }
 
     Scaffold(
         content = { innerPadding ->
@@ -139,29 +123,22 @@ fun NewSessionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = {
-//                        if (createState !is NewSessionState.Loading) {
-//                            viewModel.createSession(title, gym, wallName)
-//                        }
-                        navController.navigate(Routes.Route.name)
+                        sessionViewModel.createSession(title, gym, wallName)
+                        navController.navigate(Routes.ActiveSession.name)
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight),
-                    enabled = createState !is NewSessionState.Loading
                 ) {
-                    if (createState is NewSessionState.Loading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Start Session",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Start Session", fontSize = 16.sp)
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Start Session",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Start Session", fontSize = 16.sp)
                 }
             }
         }

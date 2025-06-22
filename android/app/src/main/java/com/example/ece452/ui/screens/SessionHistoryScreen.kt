@@ -14,12 +14,18 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.backgroundLight
+import com.example.ece452.ui.viewmodels.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SessionHistoryScreen(navController: NavController) {
+fun SessionHistoryScreen(
+    navController: NavController,
+    sessionViewModel: SessionViewModel
+) {
     // The backend connection has been temporarily removed to test navigation.
     // We will reconnect this later.
+    val sessionHistory by sessionViewModel.sessionHistory.collectAsState()
+
 
     Scaffold(
         content = { innerPadding ->

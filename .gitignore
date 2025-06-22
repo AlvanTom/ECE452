@@ -1,7 +1,9 @@
+.gradle/
+.idea/
+
 # Android
 android/.gradle/
 android/local.properties
-android/.idea/
 android/*.iml
 android/build/
 android/app/build/
@@ -29,7 +31,6 @@ yarn-error.log*
 .yarn-integrity
 
 # IDE
-.idea/
 *.iml
 
 # OS

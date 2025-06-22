@@ -19,10 +19,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ece452.data.Route
 import com.example.ece452.data.Session
-import com.example.ece452.firebase.AuthService
-import com.example.ece452.firebase.FunctionsService
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
+import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,71 +29,12 @@ import java.util.*
 @Composable
 fun ActiveSessionScreen(
     navController: NavController,
+    sessionViewModel: SessionViewModel,
     sessionId: String? = null
 ) {
-    var session by remember { mutableStateOf<Session?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    val session by sessionViewModel.activeSession.collectAsState()
+    var isLoading by remember { mutableStateOf(false) } // No longer loading from backend
     var error by remember { mutableStateOf<String?>(null) }
-    
-    val functionsService = remember { FunctionsService() }
-    val authService = remember { AuthService() }
-    
-    LaunchedEffect(sessionId) {
-        // Existing data fetching logic
-        try {
-            if (sessionId != null) {
-                val result = functionsService.getSessionByID(sessionId)
-                result.fold(
-                    onSuccess = { data ->
-                        if (data != null) {
-                            val sessionData = data["sessionData"] as? Map<String, Any>
-                            val routesData = data["routesData"] as? List<Map<String, Any>>
-
-                            if (sessionData != null) {
-                                session = Session(
-                                    id = sessionId,
-                                    userId = sessionData["userId"] as? String ?: "",
-                                    title = sessionData["title"] as? String ?: "",
-                                    location = sessionData["location"] as? String ?: "",
-                                    isIndoor = sessionData["isIndoor"] as? Boolean ?: true,
-                                    gymName = sessionData["gymName"] as? String,
-                                    createdAt = sessionData["createdAt"] as? String ?: "",
-                                    routes = routesData?.map { routeMap ->
-                                        val attempts = routeMap["attempts"] as? List<Map<String, Any>> ?: emptyList()
-                                        com.example.ece452.data.Route(
-                                            id = routeMap["id"] as? String ?: "",
-                                            routeName = routeMap["routeName"] as? String ?: "",
-                                            difficulty = routeMap["difficulty"] as? String ?: "",
-                                            tags = (routeMap["tags"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                                            notes = routeMap["notes"] as? String,
-                                            attempts = attempts.map { attemptMap ->
-                                                com.example.ece452.data.Attempt(
-                                                    success = attemptMap["success"] as? Boolean ?: false,
-                                                    createdAt = attemptMap["createdAt"] as? String ?: ""
-                                                )
-                                            }
-                                        )
-                                    } ?: emptyList()
-                                )
-                            }
-                        }
-                    },
-                    onFailure = { exception ->
-                        error = exception.message ?: "Failed to load session"
-                    }
-                )
-            } else {
-                // This case should ideally not be hit in the final flow
-                // as navigation to this screen should always provide a session ID.
-                // We'll show an error or an empty state.
-                error = "No session ID provided."
-            }
-        } catch (e: Exception) {
-            error = e.message ?: "Unknown error occurred"
-        } finally {
-            isLoading = false
-        }
-    }
     
     Scaffold { innerPadding ->
         Box(
@@ -162,7 +102,12 @@ fun ActiveSessionScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Button(
-                            onClick = { /* TODO: End session logic */ },
+                            onClick = {
+                                 sessionViewModel.endActiveSession()
+                                 navController.navigate(Routes.Sessions.name) {
+                                     popUpTo(Routes.Sessions.name) { inclusive = true }
+                                 }
+                            },
                             shape = RoundedCornerShape(50),
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
