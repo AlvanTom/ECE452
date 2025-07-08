@@ -27,6 +27,9 @@ import androidx.compose.material3.DrawerValue
 import com.example.ece452.firebase.FirebaseConfig
 import kotlinx.coroutines.launch
 import com.example.ece452.ui.components.AppDrawer
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.ece452.ui.components.TopBar
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
@@ -51,7 +54,7 @@ fun AppNavHost(modifier: Modifier = Modifier){
         Scaffold(
             topBar = {
                 if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
-                    com.example.ece452.ui.components.TopBar(
+                    TopBar(
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onProfileClick = { scope.launch { drawerState.open() } },
                     )
@@ -90,6 +93,13 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 composable(Routes.Route.name) {
                     RouteScreen(navController = navController, sessionViewModel = sessionViewModel)
                 }
+                composable(
+                    "Route/{routeIdx}",
+                    arguments = listOf(navArgument("routeIdx") { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val routeIdx = backStackEntry.arguments?.getInt("routeIdx")
+                    RouteScreen(navController = navController, sessionViewModel = sessionViewModel, routeIdx = routeIdx)
+                }
 //            composable("${Routes.ActiveSession.name}/{sessionId}") { backStackEntry ->
 //                val sessionId = backStackEntry.arguments?.getString("sessionId")
 //                ActiveSessionScreen(navController = navController, sessionId = sessionId)
@@ -99,6 +109,13 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 }
                 composable(Routes.Attempt.name) {
                     AttemptScreen(navController = navController, sessionViewModel = sessionViewModel)
+                }
+                composable(
+                    "Attempt/{routeIdx}",
+                    arguments = listOf(navArgument("routeIdx") { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val routeIdx = backStackEntry.arguments?.getInt("routeIdx")
+                    AttemptScreen(navController = navController, sessionViewModel = sessionViewModel, routeIdx = routeIdx)
                 }
             }
         }

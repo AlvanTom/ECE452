@@ -5,23 +5,33 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.ece452.data.Attempt
 import com.example.ece452.data.Route
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
 import com.example.ece452.ui.viewmodels.SessionViewModel
 import kotlinx.coroutines.launch
+import com.example.ece452.ui.components.AttemptEditModal
+import androidx.compose.material.icons.filled.Edit
+import com.example.ece452.data.Session
+import java.time.Duration
+import java.time.Instant
+import java.time.format.DateTimeParseException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,8 +42,11 @@ fun ActiveSessionScreen(
     val session by sessionViewModel.activeSession.collectAsState()
     val isEndingSession by sessionViewModel.isEndingSession.collectAsState()
     val errorMessage by sessionViewModel.errorMessage.collectAsState()
+    var expandedIndex by remember { mutableStateOf<Int?>(null) }
+    var showSheet by remember { mutableStateOf(false) }
+    var selectedAttempt: Triple<Int, Int, Attempt>? by remember { mutableStateOf(null) } // routeIdx, attemptIdx, attempt
+    var editSuccess by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
-    
     Scaffold { innerPadding ->
         Box(
             modifier = Modifier
@@ -87,12 +100,26 @@ fun ActiveSessionScreen(
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        session?.routes?.let { routes ->
-                            items(routes) { route ->
-                                RouteListItem(route = route)
+                    session?.let { nonNullSession ->
+                        LazyColumn(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            itemsIndexed(nonNullSession.routes) { routeIdx, route ->
+                                RouteListItem(
+                                    route = route,
+                                    isExpanded = expandedIndex == routeIdx,
+                                    onClick = {
+                                        expandedIndex = if (expandedIndex == routeIdx) null else routeIdx
+                                    },
+                                    onAttemptClick = { attemptIdx, attempt ->
+                                        selectedAttempt = Triple(routeIdx, attemptIdx, attempt)
+                                        editSuccess = attempt.success
+                                        showSheet = true
+                                    },
+                                    onEditClick = {
+                                        navController.navigate("${Routes.Route.name}/$routeIdx")
+                                    }
+                                )
                                 Divider()
                             }
                         }
@@ -151,33 +178,134 @@ fun ActiveSessionScreen(
                         }
                     }
                 }
+                AttemptEditModal(
+                    show = showSheet && selectedAttempt != null,
+                    attempt = selectedAttempt?.third?.copy(success = editSuccess ?: false),
+                    onStatusChange = { editSuccess = it },
+                    onDelete = {
+                        selectedAttempt?.let { (routeIdx, attemptIdx, _) ->
+                            sessionViewModel.deleteAttempt(routeIdx, attemptIdx)
+                        }
+                        showSheet = false
+                    },
+                    onSave = {
+                        selectedAttempt?.let { (routeIdx, attemptIdx, _) ->
+                            if (editSuccess != null) {
+                                sessionViewModel.updateAttemptStatus(routeIdx, attemptIdx, editSuccess!!)
+                            }
+                        }
+                        showSheet = false
+                    },
+                    onDismiss = { showSheet = false }
+                )
             }
         }
     }
 }
 
 @Composable
-fun RouteListItem(route: Route) {
+fun RouteListItem(route: Route, isExpanded: Boolean, onClick: () -> Unit, onAttemptClick: (Int, Attempt) -> Unit, onEditClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* TODO: Implement expand/collapse logic */ }
-            .padding(vertical = 16.dp)
     ) {
-        Text(
-            text = "${route.attempts.size} Attempts",
-            style = MaterialTheme.typography.labelMedium
+        // Grouped background for attempts and route name
+        Row(
+            modifier = Modifier
+                .then(if (isExpanded) Modifier.background(Color(0xFFE9E9DD)) else Modifier)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .clickable { onClick() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${route.attempts.size} Attempt${if (route.attempts.size == 1) "" else "s"}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.Gray,
+                )
+                Text(
+                    text = route.routeName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 4.dp, top = 2.dp)
+                )
+            }
+            IconButton(onClick = onEditClick) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Route")
+            }
+        }
+        if (isExpanded) {
+            route.attempts.forEachIndexed { idx, attempt ->
+                AttemptListItem(attempt, idx) { onAttemptClick(idx, attempt) }
+            }
+        }
+    }
+}
+
+@Composable
+fun AttemptListItem(attempt: Attempt, idx: Int, onClick: () -> Unit) {
+    val timeAgo = remember(attempt.createdAt) {
+        try {
+            val created = Instant.parse(attempt.createdAt)
+            val now = Instant.now()
+            val duration = Duration.between(created, now)
+            val seconds = duration.seconds
+            val minutes = duration.toMinutes()
+            val hours = duration.toHours()
+            val days = duration.toDays()
+            val weeks = days / 7
+            val years = days / 365
+            when {
+                seconds < 5 -> "just now"
+                seconds < 60 -> "$seconds seconds ago"
+                minutes < 60 -> "$minutes minutes ago"
+                hours < 24 -> "$hours hours ago"
+                days < 7 -> "$days days ago"
+                weeks < 52 -> "$weeks weeks ago"
+                else -> "$years years ago"
+            }
+        } catch (e: DateTimeParseException) {
+            ""
+        }
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .clickable { onClick() }
+    ) {
+        Icon(
+            imageVector = if (attempt.success) Icons.Default.CheckCircle else Icons.Default.Cancel,
+            contentDescription = if (attempt.success) "Success" else "Failed",
+            tint = if (attempt.success) Color(0xFF4B6536) else Color(0xFFB00020),
+            modifier = Modifier.size(20.dp)
         )
-        Text(
-            text = route.routeName,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+        Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Attempt ${idx + 1}",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            if (timeAgo.isNotEmpty()) {
+                Text(
+                    text = timeAgo,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = "Details",
+            tint = Color.Gray
         )
     }
 }
 
 @Composable
-fun SessionHeader(session: com.example.ece452.data.Session) {
+fun SessionHeader(session: Session) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -229,7 +357,7 @@ fun SessionHeader(session: com.example.ece452.data.Session) {
 }
 
 @Composable
-fun RouteCard(route: com.example.ece452.data.Route) {
+fun RouteCard(route: Route) {
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)

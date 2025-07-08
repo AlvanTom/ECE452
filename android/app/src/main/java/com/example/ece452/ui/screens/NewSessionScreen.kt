@@ -124,7 +124,7 @@ fun NewSessionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerLight),
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryLight),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,

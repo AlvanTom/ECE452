@@ -32,9 +32,10 @@ import java.util.UUID
 @Composable
 fun AttemptScreen(
     navController: NavController,
-    sessionViewModel: SessionViewModel
+    sessionViewModel: SessionViewModel,
+    routeIdx: Int? = null
 ) {
-    var isSuccess by remember { mutableStateOf(true) }
+    var isSuccess by remember { mutableStateOf(false) }
 
     Scaffold(
         content = { innerPadding ->
@@ -98,13 +99,20 @@ fun AttemptScreen(
 
                 Button(
                     onClick = {
-                        val latestRoute = sessionViewModel.activeSession.value?.routes?.lastOrNull()
-
-                        if (latestRoute != null) {
-                            sessionViewModel.addAttemptToRoute(latestRoute.id, isSuccess)
+                        val routeToUpdate = if (routeIdx != null) {
+                            sessionViewModel.activeSession.value?.routes?.getOrNull(routeIdx)
+                        } else {
+                            sessionViewModel.activeSession.value?.routes?.lastOrNull()
+                        }
+                        if (routeToUpdate != null) {
+                            sessionViewModel.addAttemptToRoute(routeToUpdate.id, isSuccess)
                             navController.popBackStack()
                         }
-                        navController.navigate(Routes.Attempt.name)
+                        if (routeIdx != null) {
+                            navController.navigate("Attempt/$routeIdx")
+                        } else {
+                            navController.navigate(Routes.Attempt.name)
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -126,10 +134,13 @@ fun AttemptScreen(
 
                 Button(
                     onClick = {
-                        val latestRoute = sessionViewModel.activeSession.value?.routes?.lastOrNull()
-
-                        if (latestRoute != null) {
-                            sessionViewModel.addAttemptToRoute(latestRoute.id, isSuccess)
+                        val routeToUpdate = if (routeIdx != null) {
+                            sessionViewModel.activeSession.value?.routes?.getOrNull(routeIdx)
+                        } else {
+                            sessionViewModel.activeSession.value?.routes?.lastOrNull()
+                        }
+                        if (routeToUpdate != null) {
+                            sessionViewModel.addAttemptToRoute(routeToUpdate.id, isSuccess)
                             navController.popBackStack()
                         }
                         navController.navigate(Routes.ActiveSession.name)
