@@ -29,8 +29,16 @@ class SessionViewModel : ViewModel() {
     private val _isEndingSession = MutableStateFlow(false)
     val isEndingSession: StateFlow<Boolean> = _isEndingSession.asStateFlow()
 
+    private val _isLoadingHistory = MutableStateFlow(false)
+    val isLoadingHistory: StateFlow<Boolean> = _isLoadingHistory.asStateFlow()
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    init {
+        // Load session history when ViewModel is created
+        loadSessionHistory()
+    }
 
     fun createSession(title: String, gym: String, wallName: String) {
         val location = if (gym.isNotBlank() && wallName.isNotBlank()) {
@@ -79,6 +87,8 @@ class SessionViewModel : ViewModel() {
                 onSuccess = { sessionId ->
                     // Only clear session on successful save
                     _activeSession.value = null
+                    // Refresh session history to include the new session
+                    refreshSessionHistory()
                     true
                 },
                 onFailure = { exception ->
@@ -114,6 +124,62 @@ class SessionViewModel : ViewModel() {
                 session.copy(routes = updatedRoutes)
             }
         }
+    }
+
+    fun loadSessionHistory() {
+        val currentUserId = authService.getCurrentUserId()
+        if (currentUserId == null) {
+            _errorMessage.value = "User not authenticated"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoadingHistory.value = true
+            clearError()
+            
+            try {
+                // First, get all session IDs for the user
+                val sessionIdsResult = functionsService.getUserSessions(currentUserId)
+                
+                sessionIdsResult.fold(
+                    onSuccess = { sessionIds ->
+                        if (sessionIds.isEmpty()) {
+                            _sessionHistory.value = emptyList()
+                        } else {
+                            // For each session ID, get the full session details
+                            val sessions = mutableListOf<Session>()
+                            
+                            for (sessionId in sessionIds) {
+                                val sessionResult = functionsService.getSessionById(sessionId)
+                                sessionResult.fold(
+                                    onSuccess = { session ->
+                                        sessions.add(session)
+                                    },
+                                    onFailure = { exception ->
+                                        // Log error but continue with other sessions
+                                        println("Failed to load session $sessionId: ${exception.message}")
+                                    }
+                                )
+                            }
+                            
+                            // Sort sessions by creation date (newest first)
+                            _sessionHistory.value = sessions.sortedByDescending { it.createdAt }
+                        }
+                    },
+                    onFailure = { exception ->
+                        _errorMessage.value = "Failed to load session history: ${exception.message ?: "Unknown error"}"
+                    }
+                )
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to load session history: ${e.message ?: "Unknown error"}"
+            } finally {
+                _isLoadingHistory.value = false
+            }
+        }
+    }
+
+    fun refreshSessionHistory() {
+        loadSessionHistory()
     }
 
     fun clearError() {
