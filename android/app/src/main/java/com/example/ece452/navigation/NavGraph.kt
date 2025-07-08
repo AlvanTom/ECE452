@@ -19,9 +19,14 @@ import com.example.ece452.ui.screens.SignupScreen
 import com.example.ece452.ui.screens.SessionHistoryScreen
 import com.example.ece452.ui.screens.ActiveSessionScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ece452.data.Attempt
 import com.example.ece452.ui.screens.AttemptScreen
 import com.example.ece452.ui.viewmodels.SessionViewModel
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.DrawerValue
+import com.example.ece452.firebase.FirebaseConfig
+import kotlinx.coroutines.launch
+import com.example.ece452.ui.components.AppDrawer
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
@@ -29,50 +34,72 @@ fun AppNavHost(modifier: Modifier = Modifier){
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
     val sessionViewModel: SessionViewModel = viewModel()
+    val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    Scaffold(
-        bottomBar = {
-            if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
-                BottomBar(navController = navController)
+    AppDrawer(
+        drawerState = drawerState,
+        scope = scope,
+        onProfileClick = { /* Add profile logic if needed */ },
+        onLogoutClick = {
+            FirebaseConfig.auth.signOut()
+            navController.navigate(Routes.Login.name) {
+                popUpTo(0) { inclusive = true }
             }
-        },
-        modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.Login.name,
-            modifier = modifier.padding(innerPadding),
-        ) {
-            composable(Routes.Login.name) {
-                LoginScreen(navController = navController)
-            }
-            composable(Routes.Signup.name) {
-                SignupScreen(navController = navController)
-            }
-            composable(Routes.Feed.name) {
-                FeedScreen()
-            }
-            composable(Routes.Sessions.name) {
-                SessionHistoryScreen(navController = navController, sessionViewModel = sessionViewModel)
-            }
-            composable(Routes.Posts.name) {
-                PostScreen()
-            }
-            composable(Routes.NewSession.name) {
-                NewSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
-            }
-            composable(Routes.Route.name) {
-                RouteScreen(navController = navController, sessionViewModel = sessionViewModel)
-            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
+                    com.example.ece452.ui.components.TopBar(
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onProfileClick = { scope.launch { drawerState.open() } },
+                    )
+                }
+            },
+            bottomBar = {
+                if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
+                    BottomBar(navController = navController)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = Routes.Login.name,
+                modifier = modifier.padding(innerPadding),
+            ) {
+                composable(Routes.Login.name) {
+                    LoginScreen(navController = navController)
+                }
+                composable(Routes.Signup.name) {
+                    SignupScreen(navController = navController)
+                }
+                composable(Routes.Feed.name) {
+                    FeedScreen()
+                }
+                composable(Routes.Sessions.name) {
+                    SessionHistoryScreen(navController = navController, sessionViewModel = sessionViewModel)
+                }
+                composable(Routes.Posts.name) {
+                    PostScreen()
+                }
+                composable(Routes.NewSession.name) {
+                    NewSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
+                }
+                composable(Routes.Route.name) {
+                    RouteScreen(navController = navController, sessionViewModel = sessionViewModel)
+                }
 //            composable("${Routes.ActiveSession.name}/{sessionId}") { backStackEntry ->
 //                val sessionId = backStackEntry.arguments?.getString("sessionId")
 //                ActiveSessionScreen(navController = navController, sessionId = sessionId)
 //            }
-            composable(Routes.ActiveSession.name) {
-                ActiveSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
-            }
-            composable(Routes.Attempt.name) {
-                AttemptScreen(navController = navController, sessionViewModel = sessionViewModel)
+                composable(Routes.ActiveSession.name) {
+                    ActiveSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
+                }
+                composable(Routes.Attempt.name) {
+                    AttemptScreen(navController = navController, sessionViewModel = sessionViewModel)
+                }
             }
         }
     }
