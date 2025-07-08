@@ -1,17 +1,26 @@
 package com.example.ece452.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.ece452.data.Session
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.viewmodels.SessionViewModel
@@ -22,10 +31,9 @@ fun SessionHistoryScreen(
     navController: NavController,
     sessionViewModel: SessionViewModel
 ) {
-    // The backend connection has been temporarily removed to test navigation.
-    // We will reconnect this later.
     val sessionHistory by sessionViewModel.sessionHistory.collectAsState()
-
+    val isLoading by sessionViewModel.isLoadingHistory.collectAsState()
+    val errorMessage by sessionViewModel.errorMessage.collectAsState()
 
     Scaffold(
         content = { innerPadding ->
@@ -44,9 +52,74 @@ fun SessionHistoryScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // This is where the list of past sessions will go.
-                // For now, it's a spacer.
-                Spacer(modifier = Modifier.weight(1f))
+                // Error message
+                errorMessage?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Text(
+                            text = error,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+
+                // Loading indicator
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (sessionHistory.isEmpty() && errorMessage == null) {
+                    // Empty state
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "No sessions yet",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Start your first climbing session!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    // Session list
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(sessionHistory) { session ->
+                            SessionItem(
+                                session = session,
+                                onClick = { 
+                                    // TODO: Navigate to session details
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = { navController.navigate(Routes.NewSession.name) },
@@ -66,4 +139,83 @@ fun SessionHistoryScreen(
             }
         }
     )
+}
+
+@Composable
+fun SessionItem(
+    session: Session,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Title
+            Text(
+                text = session.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Location
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Location",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = session.location,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Date
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Date",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = session.createdAt,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Routes count
+            Text(
+                text = "${session.routesCount} route${if (session.routesCount != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
 } 
