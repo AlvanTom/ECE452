@@ -53,7 +53,7 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                     .fillMaxSize()
                     .background(backgroundLight)
                     .verticalScroll(scrollState)
-                    .padding(16.dp),
+                    .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
