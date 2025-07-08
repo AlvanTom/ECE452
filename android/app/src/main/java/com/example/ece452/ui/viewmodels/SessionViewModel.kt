@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 class SessionViewModel : ViewModel() {
 
@@ -111,10 +113,11 @@ class SessionViewModel : ViewModel() {
             currentSession?.let { session ->
                 val updatedRoutes = session.routes.map { route ->
                     if (route.id == routeId) {
+                        val now = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
                         val newAttempt = Attempt(
                             id = UUID.randomUUID().toString(),
                             success = isSuccess,
-                            createdAt = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                            createdAt = now
                         )
                         route.copy(attempts = route.attempts + newAttempt)
                     } else {
@@ -184,5 +187,45 @@ class SessionViewModel : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    fun updateAttemptStatus(routeIdx: Int, attemptIdx: Int, success: Boolean) {
+        _activeSession.update { session ->
+            session?.copy(
+                routes = session.routes.mapIndexed { rIdx, route ->
+                    if (rIdx == routeIdx) {
+                        route.copy(
+                            attempts = route.attempts.mapIndexed { aIdx, attempt ->
+                                if (aIdx == attemptIdx) attempt.copy(success = success) else attempt
+                            }
+                        )
+                    } else route
+                }
+            )
+        }
+    }
+
+    fun deleteAttempt(routeIdx: Int, attemptIdx: Int) {
+        _activeSession.update { session ->
+            session?.copy(
+                routes = session.routes.mapIndexed { rIdx, route ->
+                    if (rIdx == routeIdx) {
+                        route.copy(
+                            attempts = route.attempts.filterIndexed { aIdx, _ -> aIdx != attemptIdx }
+                        )
+                    } else route
+                }
+            )
+        }
+    }
+
+    fun updateRoute(routeIdx: Int, updatedRoute: Route) {
+        _activeSession.update { session ->
+            session?.copy(
+                routes = session.routes.mapIndexed { idx, route ->
+                    if (idx == routeIdx) updatedRoute else route
+                }
+            )
+        }
     }
 } 

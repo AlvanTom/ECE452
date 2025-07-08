@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -41,13 +42,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import com.example.ece452.data.Attempt
 import com.example.ece452.data.Route
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.theme.primaryContainerDark
-import com.example.ece452.ui.theme.secondaryContainerDark
-import com.example.ece452.ui.theme.secondaryContainerLight
 import com.example.ece452.ui.theme.secondaryLight
 import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.util.UUID
@@ -55,18 +56,31 @@ import java.util.UUID
 @Composable
 fun RouteScreen(
     navController: NavController,
-    sessionViewModel: SessionViewModel
+    sessionViewModel: SessionViewModel,
+    routeIdx: Int? = null // null means create mode, otherwise update mode
 ) {
-
-    var routeName by remember { mutableStateOf("") }
-    var selectedVDifficulty by remember { mutableStateOf<Int?>(null) }
+    val session by sessionViewModel.activeSession.collectAsState()
+    val existingRoute = routeIdx?.let { session?.routes?.getOrNull(it) }
+    var routeName by remember { mutableStateOf(existingRoute?.routeName ?: "My Route") }
+    var selectedVDifficulty by remember { mutableStateOf(existingRoute?.difficulty?.removePrefix("V")?.toIntOrNull()) }
     var expanded by remember { mutableStateOf(false) }
     val vScaleOptions = (0..12).map { "V$it" }
-    var notes by remember { mutableStateOf("") }
-    var tags by remember { mutableStateOf(listOf<String>()) }
+    var notes by remember { mutableStateOf(existingRoute?.notes ?: "") }
+    var tags by remember { mutableStateOf(existingRoute?.tags ?: listOf()) }
     var tagInput by remember { mutableStateOf("") }
-
+    var attempts by remember { mutableStateOf(existingRoute?.attempts ?: emptyList()) }
     val scrollState = rememberScrollState()
+    val isUpdateMode = routeIdx != null
+
+    LaunchedEffect(existingRoute) {
+        if (isUpdateMode && existingRoute != null) {
+            routeName = existingRoute.routeName
+            selectedVDifficulty = existingRoute.difficulty.removePrefix("V").toIntOrNull()
+            notes = existingRoute.notes ?: ""
+            tags = existingRoute.tags
+            attempts = existingRoute.attempts
+        }
+    }
 
     Scaffold(
         content = { innerPadding ->
@@ -81,7 +95,7 @@ fun RouteScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "New Route",
+                    text = if (isUpdateMode) "Edit Route" else "New Route",
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
@@ -89,6 +103,7 @@ fun RouteScreen(
                     value = routeName,
                     onValueChange = { routeName = it },
                     label = { Text("Route Name") },
+                    placeholder = { Text("e.g. Main Wall V3") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
@@ -197,8 +212,7 @@ fun RouteScreen(
                     label = { Text("Notes (optional)") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp) // multiline height
-                        .padding(vertical = 8.dp),
+                        .height(120.dp), // multiline height
                     singleLine = false,
                     maxLines = 5
                 )
@@ -207,22 +221,38 @@ fun RouteScreen(
 
                 Button(
                     onClick = {
-                        val newRoute = Route(
-                            id = UUID.randomUUID().toString(),
-                            routeName = routeName,
-                            difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
-                            notes = notes,
-                            tags = tags,
-                            attempts = emptyList<Attempt>()
-                        )
-                        sessionViewModel.addRouteToActiveSession(newRoute)
-                        navController.navigate(Routes.Attempt.name)
+                        if (isUpdateMode && routeIdx != null) {
+                            // Add attempt to existing route
+                            val updatedRoute = existingRoute?.copy(
+                                routeName = routeName,
+                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                notes = notes,
+                                tags = tags,
+                                attempts = attempts // keep attempts
+                            )
+                            if (updatedRoute != null) {
+                                sessionViewModel.updateRoute(routeIdx, updatedRoute)
+                            }
+                            navController.navigate("Attempt/$routeIdx")
+                        } else {
+                            val newRoute = Route(
+                                id = UUID.randomUUID().toString(),
+                                routeName = routeName,
+                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                notes = notes,
+                                tags = tags,
+                                attempts = emptyList<Attempt>()
+                            )
+                            sessionViewModel.addRouteToActiveSession(newRoute)
+                            navController.navigate(Routes.Attempt.name)
+                        }
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = secondaryLight)
+                    colors = ButtonDefaults.buttonColors(containerColor = secondaryLight),
+                    enabled = routeName.isNotBlank() && selectedVDifficulty != null
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -230,37 +260,69 @@ fun RouteScreen(
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Add Attempt", fontSize = 16.sp)
+                    Text(text = if (isUpdateMode) "Add Attempt" else "Add Attempt", fontSize = 16.sp)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
-                        val newRoute = Route(
-                            id = UUID.randomUUID().toString(),
-                            routeName = routeName,
-                            difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
-                            notes = notes,
-                            tags = tags,
-                            attempts = emptyList<Attempt>()
-                        )
-                        sessionViewModel.addRouteToActiveSession(newRoute)
-                        navController.popBackStack()
+                        if (isUpdateMode && routeIdx != null) {
+                            val updatedRoute = existingRoute?.copy(
+                                routeName = routeName,
+                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                notes = notes,
+                                tags = tags,
+                                attempts = attempts
+                            )
+                            if (updatedRoute != null) {
+                                sessionViewModel.updateRoute(routeIdx, updatedRoute)
+                            }
+                            navController.popBackStack()
+                        } else {
+                            val newRoute = Route(
+                                id = UUID.randomUUID().toString(),
+                                routeName = routeName,
+                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                notes = notes,
+                                tags = tags,
+                                attempts = emptyList<Attempt>()
+                            )
+                            sessionViewModel.addRouteToActiveSession(newRoute)
+                            navController.popBackStack()
+                        }
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerDark)
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryContainerDark),
+                    enabled = routeName.isNotBlank() && selectedVDifficulty != null
                 ) {
                     Icon(
                         imageVector = Icons.Default.Save,
-                        contentDescription = "Save Route",
+                        contentDescription = if (isUpdateMode) "Update Route" else "Save Route",
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Save Route", fontSize = 16.sp)
+                    Text(text = if (isUpdateMode) "Update Route" else "Save Route", fontSize = 16.sp)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { navController.navigate(Routes.ActiveSession.name) },
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = secondaryLight)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowLeft,
+                        contentDescription = "Back to Active Session",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Back to Active Session", fontSize = 16.sp)
                 }
             }
         }
