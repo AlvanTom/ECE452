@@ -27,4 +27,32 @@ class AuthService {
             null
         }
     }
+
+    /**
+     * Get the current authenticated user
+     */
+    fun getCurrentUser(): FirebaseUser? {
+        return auth.currentUser
+    }
+
+    /**
+     * Get the current user's UID
+     */
+    fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    /**
+     * Check if a user is currently signed in
+     */
+    fun isUserSignedIn(): Boolean {
+        return auth.currentUser != null
+    }
+
+    /**
+     * Sign out the current user
+     */
+    fun signOut() {
+        auth.signOut()
+    }
 } 

@@ -21,6 +21,7 @@ import com.example.ece452.data.Route
 import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.*
 import com.example.ece452.ui.viewmodels.SessionViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +30,9 @@ fun ActiveSessionScreen(
     sessionViewModel: SessionViewModel
 ) {
     val session by sessionViewModel.activeSession.collectAsState()
+    val isEndingSession by sessionViewModel.isEndingSession.collectAsState()
+    val errorMessage by sessionViewModel.errorMessage.collectAsState()
+    val scope = rememberCoroutineScope()
     
     Scaffold { innerPadding ->
         Box(
@@ -49,8 +53,35 @@ fun ActiveSessionScreen(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Error message display
+                    errorMessage?.let { message ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = message,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { sessionViewModel.clearError() }) {
+                                    Text("Dismiss")
+                                }
+                            }
+                        }
+                    }
+
                     Text(
-                        text = session!!.title,
+                        text = session?.title ?: "Unknown Session",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 16.dp)
@@ -59,9 +90,11 @@ fun ActiveSessionScreen(
                     LazyColumn(
                         modifier = Modifier.weight(1f)
                     ) {
-                        items(session!!.routes) { route ->
-                            RouteListItem(route = route)
-                            Divider()
+                        session?.routes?.let { routes ->
+                            items(routes) { route ->
+                                RouteListItem(route = route)
+                                Divider()
+                            }
                         }
                     }
 
@@ -73,7 +106,8 @@ fun ActiveSessionScreen(
                         },
                         shape = RoundedCornerShape(50),
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        enabled = !isEndingSession
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add a new route")
                         Spacer(modifier = Modifier.width(8.dp))
@@ -84,21 +118,37 @@ fun ActiveSessionScreen(
 
                     Button(
                         onClick = {
-                             sessionViewModel.endActiveSession()
-                             navController.navigate(Routes.Sessions.name) {
-                                 popUpTo(Routes.Sessions.name) { inclusive = true }
-                             }
+                            scope.launch {
+                                val success = sessionViewModel.endActiveSession()
+                                if (success) {
+                                    navController.navigate(Routes.Sessions.name) {
+                                        popUpTo(Routes.Sessions.name) { inclusive = true }
+                                    }
+                                }
+                                // If failed, error message will be shown and session preserved
+                            }
                         },
                         shape = RoundedCornerShape(50),
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
-                        )
+                        ),
+                        enabled = !isEndingSession
                     ) {
-                        Icon(Icons.Default.Output, contentDescription = "End Session")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("End Session")
+                        if (isEndingSession) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Ending Session...")
+                        } else {
+                            Icon(Icons.Default.Output, contentDescription = "End Session")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("End Session")
+                        }
                     }
                 }
             }
