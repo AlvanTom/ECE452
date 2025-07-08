@@ -178,3 +178,92 @@ export const getSessionsByUID = functions.https.onCall(async (request) => {
   const sessionsData = sessionsDoc.docs.map((doc) => doc.id);
   return { sessionIds: sessionsData };
 });
+
+export const putSession = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be logged in"
+    );
+  }
+  const {
+    sessionId,
+    title,
+    gymName,
+    routes,
+  }: {
+    sessionId: string;
+    title?: string;
+    gymName?: string;
+    routes?: {
+      routeName: string;
+      difficulty: string;
+      tags: string[];
+      notes?: string;
+      attempts: { success: boolean; createdAt: string }[];
+    }[];
+  } = request.data;
+
+  if (!sessionId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Session ID is required"
+    );
+  }
+
+  const sessionRef = db.collection("sessions").doc(sessionId);
+  const sessionDoc = await sessionRef.get();
+
+  if (!sessionDoc.exists) {
+    throw new functions.https.HttpsError("not-found", "Session not found");
+  }
+
+  const updatePayload: any = {};
+  if (title !== undefined) updatePayload.title = title;
+  if (gymName !== undefined) updatePayload.gymName = gymName;
+
+  if (Object.keys(updatePayload).length > 0) {
+    await sessionRef.update(updatePayload);
+  }
+  if (Array.isArray(routes)) {
+    const routesRef = sessionRef.collection("routes");
+    const existingRoutes = await routesRef.listDocuments();
+
+    // Delete old routes (and their attempts)
+    await Promise.all(existingRoutes.map(async (routeDoc) => {
+      const attemptsRef = routeDoc.collection("attempts");
+      const attemptsDocs = await attemptsRef.listDocuments();
+      await Promise.all(attemptsDocs.map((doc) => doc.delete()));
+      await routeDoc.delete();
+    }));
+
+    // Add new routes
+    for (const route of routes) {
+      const { routeName, difficulty, tags, notes, attempts } = route;
+
+      if (!routeName || !difficulty || !Array.isArray(tags) || !Array.isArray(attempts)) {
+        throw new functions.https.HttpsError("invalid-argument", "Invalid route structure");
+      }
+
+      const routeRef = await routesRef.add({
+        routeName,
+        difficulty,
+        tags,
+        notes: notes ?? null,
+      });
+
+      for (const attempt of attempts) {
+        if (typeof attempt.success !== "boolean" || !attempt.createdAt) {
+          throw new functions.https.HttpsError("invalid-argument", "Invalid attempt structure");
+        }
+
+        await routeRef.collection("attempts").add({
+          success: attempt.success,
+          createdAt: attempt.createdAt,
+        });
+      }
+    }
+  }
+
+  return { sessionId };
+});
