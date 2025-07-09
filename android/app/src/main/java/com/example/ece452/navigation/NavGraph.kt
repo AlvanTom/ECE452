@@ -87,8 +87,12 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 composable(Routes.Posts.name) {
                     PostScreen()
                 }
-                composable(Routes.NewSession.name) {
-                    NewSessionScreen(navController = navController, sessionViewModel = sessionViewModel)
+                composable(
+                    "${Routes.NewSession.name}?sessionId={sessionId}",
+                    arguments = listOf(navArgument("sessionId") { type = NavType.StringType; defaultValue = "" })
+                ) { backStackEntry ->
+                    val sessionId = backStackEntry.arguments?.getString("sessionId")
+                    NewSessionScreen(navController = navController, sessionViewModel = sessionViewModel, sessionId = sessionId)
                 }
                 composable(Routes.Route.name) {
                     RouteScreen(navController = navController, sessionViewModel = sessionViewModel)

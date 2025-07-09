@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import com.google.firebase.auth.FirebaseAuth
 
 class SessionViewModel : ViewModel() {
 
@@ -37,9 +38,41 @@ class SessionViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _isAuthenticated = MutableStateFlow(false)
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
     init {
-        // Load session history when ViewModel is created
-        loadSessionHistory()
+        // Check authentication state and set up listener
+        checkAuthenticationState()
+        setupAuthStateListener()
+    }
+
+    private fun checkAuthenticationState() {
+        val currentUser = authService.getCurrentUser()
+        _isAuthenticated.value = currentUser != null
+        
+        // If user is authenticated, load session history
+        if (currentUser != null) {
+            loadSessionHistory()
+        } else {
+            _errorMessage.value = "User not authenticated"
+        }
+    }
+
+    private fun setupAuthStateListener() {
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+            val user = auth.currentUser
+            _isAuthenticated.value = user != null
+            
+            if (user != null) {
+                // User signed in, load session history
+                loadSessionHistory()
+            } else {
+                // User signed out, clear session history and show error
+                _sessionHistory.value = emptyList()
+                _errorMessage.value = "User not authenticated"
+            }
+        }
     }
 
     fun createSession(title: String, gym: String, wallName: String) {
@@ -50,7 +83,7 @@ class SessionViewModel : ViewModel() {
         }
 
         val newSession = Session(
-            id = UUID.randomUUID().toString(),
+            id = "", // Empty ID indicates a new session
             userId = "local_user", // Placeholder for local development
             title = title,
             location = location,
@@ -80,26 +113,44 @@ class SessionViewModel : ViewModel() {
         clearError()
         
         return try {
+            // Debug: Print session info
+            println("Ending session - ID: '${session.id}', UserID: '${session.userId}', CurrentUserID: '$currentUserId'")
+            
             // Update session with real user ID before sending to backend
             val sessionWithUserId = session.copy(userId = currentUserId)
             
-            val result = functionsService.createSession(sessionWithUserId)
+            val result = if (session.id.isNotEmpty()) {
+                // Session already exists in backend, update it
+                println("Updating existing session with ID: ${session.id}")
+                functionsService.updateSession(session)
+            } else {
+                // New session, create it
+                println("Creating new session")
+                functionsService.createSession(session)
+            }
             
             result.fold(
                 onSuccess = { sessionId ->
-                    // Only clear session on successful save
-                    _activeSession.value = null
-                    // Refresh session history to include the new session
+                    println("Session saved successfully with ID: $sessionId")
+                    if (session.id.isEmpty()) {
+                        // If this was a new session, update the local session with the Firestore ID
+                        _activeSession.value = sessionWithUserId.copy(id = sessionId)
+                    } else {
+                        // If this was an update, clear the session
+                        _activeSession.value = null
+                    }
                     refreshSessionHistory()
                     true
                 },
                 onFailure = { exception ->
+                    println("Failed to save session: ${exception.message}")
                     // Keep session and show error - don't clear it
                     _errorMessage.value = "Failed to save session: ${exception.message ?: "Unknown error"}"
                     false
                 }
             )
         } catch (e: Exception) {
+            println("Exception while saving session: ${e.message}")
             // Keep session and show error - don't clear it
             _errorMessage.value = "Failed to save session: ${e.message ?: "Unknown error"}"
             false
@@ -132,7 +183,7 @@ class SessionViewModel : ViewModel() {
     fun loadSessionHistory() {
         val currentUserId = authService.getCurrentUserId()
         if (currentUserId == null) {
-            _errorMessage.value = "User not authenticated"
+            // Don't show error here, let the auth state listener handle it
             return
         }
 
@@ -182,7 +233,14 @@ class SessionViewModel : ViewModel() {
     }
 
     fun refreshSessionHistory() {
-        loadSessionHistory()
+        // Only refresh if user is authenticated
+        if (authService.getCurrentUser() != null) {
+            loadSessionHistory()
+        }
+    }
+
+    fun checkAuthState() {
+        checkAuthenticationState()
     }
 
     fun clearError() {
@@ -227,5 +285,33 @@ class SessionViewModel : ViewModel() {
                 }
             )
         }
+    }
+
+    fun loadSessionAsActive(session: Session) {
+        // Preserve the original user ID from the backend session
+        _activeSession.value = session
+        clearError()
+    }
+
+    suspend fun updateSession(session: Session): Result<String> {
+        val result = functionsService.updateSession(session)
+        
+        // If update was successful, update the session in local history
+        result.fold(
+            onSuccess = { sessionId ->
+                _sessionHistory.update { currentHistory ->
+                    currentHistory.map { existingSession ->
+                        if (existingSession.id == session.id) {
+                            session.copy(id = sessionId) // Ensure we have the correct ID
+                        } else {
+                            existingSession
+                        }
+                    }
+                }
+            },
+            onFailure = { /* Keep existing history on failure */ }
+        )
+        
+        return result
     }
 } 
