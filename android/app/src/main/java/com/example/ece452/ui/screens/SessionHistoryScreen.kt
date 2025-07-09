@@ -35,6 +35,7 @@ fun SessionHistoryScreen(
     val sessionHistory by sessionViewModel.sessionHistory.collectAsState()
     val isLoading by sessionViewModel.isLoadingHistory.collectAsState()
     val errorMessage by sessionViewModel.errorMessage.collectAsState()
+    val isAuthenticated by sessionViewModel.isAuthenticated.collectAsState()
 
     Scaffold(
         content = { innerPadding ->
@@ -53,34 +54,8 @@ fun SessionHistoryScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Error message
-                errorMessage?.let { error ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                    ) {
-                        Text(
-                            text = error,
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-
-                // Loading indicator
-                if (isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (sessionHistory.isEmpty() && errorMessage == null) {
-                    // Empty state
+                // Authentication state handling
+                if (!isAuthenticated) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -91,35 +66,87 @@ fun SessionHistoryScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "No sessions yet",
+                                text = "Please log in to view your sessions",
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Start your first climbing session!",
+                                text = "Your session history will appear here after you sign in",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else {
-                    // Session list
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(sessionHistory) { session ->
-                            SessionItem(
-                                session = session,
-                                onClick = { 
-                                    sessionViewModel.loadSessionAsActive(session)
-                                    navController.navigate(Routes.ActiveSession.name)
-                                },
-                                onEditClick = {
-                                    navController.navigate("${Routes.NewSession.name}?sessionId=${session.id}")
-                                }
+                    // Error message
+                    errorMessage?.let { error ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Text(
+                                text = error,
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.onErrorContainer
                             )
+                        }
+                    }
+
+                    // Loading indicator
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (sessionHistory.isEmpty() && errorMessage == null) {
+                        // Empty state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "No sessions yet",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Start your first climbing session!",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        // Session list
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(sessionHistory) { session ->
+                                SessionItem(
+                                    session = session,
+                                    onClick = { 
+                                        sessionViewModel.loadSessionAsActive(session)
+                                        navController.navigate(Routes.ActiveSession.name)
+                                    },
+                                    onEditClick = {
+                                        navController.navigate("${Routes.NewSession.name}?sessionId=${session.id}")
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -132,7 +159,8 @@ fun SessionHistoryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    enabled = isAuthenticated
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,

@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import com.google.firebase.auth.FirebaseAuth
 
 class SessionViewModel : ViewModel() {
 
@@ -37,9 +38,41 @@ class SessionViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _isAuthenticated = MutableStateFlow(false)
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
     init {
-        // Load session history when ViewModel is created
-        loadSessionHistory()
+        // Check authentication state and set up listener
+        checkAuthenticationState()
+        setupAuthStateListener()
+    }
+
+    private fun checkAuthenticationState() {
+        val currentUser = authService.getCurrentUser()
+        _isAuthenticated.value = currentUser != null
+        
+        // If user is authenticated, load session history
+        if (currentUser != null) {
+            loadSessionHistory()
+        } else {
+            _errorMessage.value = "User not authenticated"
+        }
+    }
+
+    private fun setupAuthStateListener() {
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+            val user = auth.currentUser
+            _isAuthenticated.value = user != null
+            
+            if (user != null) {
+                // User signed in, load session history
+                loadSessionHistory()
+            } else {
+                // User signed out, clear session history and show error
+                _sessionHistory.value = emptyList()
+                _errorMessage.value = "User not authenticated"
+            }
+        }
     }
 
     fun createSession(title: String, gym: String, wallName: String) {
@@ -150,7 +183,7 @@ class SessionViewModel : ViewModel() {
     fun loadSessionHistory() {
         val currentUserId = authService.getCurrentUserId()
         if (currentUserId == null) {
-            _errorMessage.value = "User not authenticated"
+            // Don't show error here, let the auth state listener handle it
             return
         }
 
@@ -200,7 +233,14 @@ class SessionViewModel : ViewModel() {
     }
 
     fun refreshSessionHistory() {
-        loadSessionHistory()
+        // Only refresh if user is authenticated
+        if (authService.getCurrentUser() != null) {
+            loadSessionHistory()
+        }
+    }
+
+    fun checkAuthState() {
+        checkAuthenticationState()
     }
 
     fun clearError() {
