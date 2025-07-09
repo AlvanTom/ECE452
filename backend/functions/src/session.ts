@@ -169,7 +169,7 @@ export const getSessionsByUID = functions.https.onCall(async (request) => {
   const userDoc = await userRef.get();
 
   if (!userDoc.exists) {
-    throw new functions.https.HttpsError("not-found", "User not found");
+    return { sessionIds: [] };
   }
 
   const sessionsRef = db.collection("sessions").where("userId", "==", uid);
