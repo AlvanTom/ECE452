@@ -89,11 +89,11 @@ class SessionViewModel : ViewModel() {
             val result = if (session.id.isNotEmpty()) {
                 // Session already exists in backend, update it
                 println("Updating existing session with ID: ${session.id}")
-                functionsService.updateSession(sessionWithUserId)
+                functionsService.updateSession(session)
             } else {
                 // New session, create it
                 println("Creating new session")
-                functionsService.createSession(sessionWithUserId)
+                functionsService.createSession(session)
             }
             
             result.fold(
@@ -251,5 +251,27 @@ class SessionViewModel : ViewModel() {
         // Preserve the original user ID from the backend session
         _activeSession.value = session
         clearError()
+    }
+
+    suspend fun updateSession(session: Session): Result<String> {
+        val result = functionsService.updateSession(session)
+        
+        // If update was successful, update the session in local history
+        result.fold(
+            onSuccess = { sessionId ->
+                _sessionHistory.update { currentHistory ->
+                    currentHistory.map { existingSession ->
+                        if (existingSession.id == session.id) {
+                            session.copy(id = sessionId) // Ensure we have the correct ID
+                        } else {
+                            existingSession
+                        }
+                    }
+                }
+            },
+            onFailure = { /* Keep existing history on failure */ }
+        )
+        
+        return result
     }
 } 
