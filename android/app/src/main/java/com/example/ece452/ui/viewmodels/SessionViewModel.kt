@@ -132,14 +132,27 @@ class SessionViewModel : ViewModel() {
             result.fold(
                 onSuccess = { sessionId ->
                     println("Session saved successfully with ID: $sessionId")
-                    if (session.id.isEmpty()) {
-                        // If this was a new session, update the local session with the Firestore ID
-                        _activeSession.value = sessionWithUserId.copy(id = sessionId)
-                    } else {
-                        // If this was an update, clear the session
-                        _activeSession.value = null
+                    val finalSession = sessionWithUserId.copy(id = sessionId)
+                    
+                    // Update local session history immediately
+                    _sessionHistory.update { currentHistory ->
+                        if (session.id.isEmpty()) {
+                            // New session - add to history
+                            (listOf(finalSession) + currentHistory).sortedByDescending { it.createdAt }
+                        } else {
+                            // Existing session - update in history
+                            currentHistory.map { existingSession ->
+                                if (existingSession.id == session.id) {
+                                    finalSession
+                                } else {
+                                    existingSession
+                                }
+                            }
+                        }
                     }
-                    refreshSessionHistory()
+                    
+                    // Clear active session
+                    _activeSession.value = null
                     true
                 },
                 onFailure = { exception ->
