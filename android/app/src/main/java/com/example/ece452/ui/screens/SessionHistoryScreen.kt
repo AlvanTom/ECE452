@@ -112,7 +112,8 @@ fun SessionHistoryScreen(
                             SessionItem(
                                 session = session,
                                 onClick = { 
-                                    // TODO: Navigate to session details
+                                    sessionViewModel.loadSessionAsActive(session)
+                                    navController.navigate(Routes.ActiveSession.name)
                                 }
                             )
                         }

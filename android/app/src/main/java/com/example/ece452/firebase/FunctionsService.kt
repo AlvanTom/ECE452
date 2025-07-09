@@ -159,4 +159,43 @@ class FunctionsService {
             }
         )
     }
+
+    suspend fun updateSession(session: Session): Result<String> {
+        println("[DEBUG] updateSession called with session: $session")
+        val backendRoutes = session.routes.map { route ->
+            mapOf(
+                "routeName" to route.routeName,
+                "difficulty" to route.difficulty,
+                "tags" to route.tags,
+                "notes" to (route.notes ?: ""),
+                "attempts" to route.attempts.map { attempt ->
+                    mapOf(
+                        "success" to attempt.success,
+                        "createdAt" to attempt.createdAt
+                    )
+                }
+            )
+        }
+
+        val data = buildMap<String, Any> {
+            put("sessionId", session.id)
+            put("title", session.title)
+            session.gymName?.let { put("gymName", it) }
+            put("routes", backendRoutes)
+        }
+
+        return callFunction("putSession", data).fold(
+            onSuccess = { responseData ->
+                val sessionId = responseData?.get("sessionId") as? String
+                if (sessionId != null) {
+                    Result.success(sessionId)
+                } else {
+                    Result.failure(Exception("Invalid response: missing sessionId"))
+                }
+            },
+            onFailure = { exception ->
+                Result.failure(exception)
+            }
+        )
+    }
 } 

@@ -50,7 +50,7 @@ class SessionViewModel : ViewModel() {
         }
 
         val newSession = Session(
-            id = UUID.randomUUID().toString(),
+            id = "", // Empty ID indicates a new session
             userId = "local_user", // Placeholder for local development
             title = title,
             location = location,
@@ -80,26 +80,44 @@ class SessionViewModel : ViewModel() {
         clearError()
         
         return try {
+            // Debug: Print session info
+            println("Ending session - ID: '${session.id}', UserID: '${session.userId}', CurrentUserID: '$currentUserId'")
+            
             // Update session with real user ID before sending to backend
             val sessionWithUserId = session.copy(userId = currentUserId)
             
-            val result = functionsService.createSession(sessionWithUserId)
+            val result = if (session.id.isNotEmpty()) {
+                // Session already exists in backend, update it
+                println("Updating existing session with ID: ${session.id}")
+                functionsService.updateSession(sessionWithUserId)
+            } else {
+                // New session, create it
+                println("Creating new session")
+                functionsService.createSession(sessionWithUserId)
+            }
             
             result.fold(
                 onSuccess = { sessionId ->
-                    // Only clear session on successful save
-                    _activeSession.value = null
-                    // Refresh session history to include the new session
+                    println("Session saved successfully with ID: $sessionId")
+                    if (session.id.isEmpty()) {
+                        // If this was a new session, update the local session with the Firestore ID
+                        _activeSession.value = sessionWithUserId.copy(id = sessionId)
+                    } else {
+                        // If this was an update, clear the session
+                        _activeSession.value = null
+                    }
                     refreshSessionHistory()
                     true
                 },
                 onFailure = { exception ->
+                    println("Failed to save session: ${exception.message}")
                     // Keep session and show error - don't clear it
                     _errorMessage.value = "Failed to save session: ${exception.message ?: "Unknown error"}"
                     false
                 }
             )
         } catch (e: Exception) {
+            println("Exception while saving session: ${e.message}")
             // Keep session and show error - don't clear it
             _errorMessage.value = "Failed to save session: ${e.message ?: "Unknown error"}"
             false
@@ -227,5 +245,11 @@ class SessionViewModel : ViewModel() {
                 }
             )
         }
+    }
+
+    fun loadSessionAsActive(session: Session) {
+        // Preserve the original user ID from the backend session
+        _activeSession.value = session
+        clearError()
     }
 } 
