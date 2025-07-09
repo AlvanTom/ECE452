@@ -105,7 +105,7 @@ fun SessionHistoryScreen(
                         ) {
                             CircularProgressIndicator()
                         }
-                    } else if (sessionHistory.isEmpty() && errorMessage == null) {
+                    } else if (sessionHistory.isEmpty()) {
                         // Empty state
                         Box(
                             modifier = Modifier
