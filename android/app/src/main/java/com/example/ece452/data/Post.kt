@@ -7,5 +7,6 @@ data class Post(
     val date: String,
     val vScale: Int,
     val isIndoor: Boolean,
-    val notes: String
+    val notes: String,
+    val mediaUrls: List<String> = emptyList() // Added for media upload
 )

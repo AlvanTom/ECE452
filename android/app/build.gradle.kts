@@ -58,8 +58,12 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.functions)
+    implementation(libs.firebase.storage) // Added for media upload
     implementation(libs.kotlinx.coroutines.play.services)
-    
+    implementation(libs.firebase.storage.ktx)
+
+    implementation(libs.coil.compose) // For image loading in Compose
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

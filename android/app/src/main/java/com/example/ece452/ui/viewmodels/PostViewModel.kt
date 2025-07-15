@@ -7,6 +7,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.util.*
+import android.net.Uri
+import com.example.ece452.firebase.FirebaseConfig
+import com.google.firebase.storage.StorageReference
+import kotlinx.coroutines.tasks.await
 
 class PostViewModel : ViewModel() {
 
@@ -19,13 +23,27 @@ class PostViewModel : ViewModel() {
     private val _postHistory = MutableStateFlow<List<Post>>(emptyList())
     val postHistory: StateFlow<List<Post>> = _postHistory.asStateFlow()
 
+    suspend fun uploadMediaFiles(uris: List<Uri>, userId: String): List<String> {
+        val storage = FirebaseConfig.storage
+        val urls = mutableListOf<String>()
+        for (uri in uris) {
+            val fileName = "${userId}_${System.currentTimeMillis()}_${uri.lastPathSegment}"
+            val ref: StorageReference = storage.reference.child("post_media/$fileName")
+            val uploadTask = ref.putFile(uri).await()
+            val url = ref.downloadUrl.await().toString()
+            urls.add(url)
+        }
+        return urls
+    }
+
     fun createPost(
         title: String,
         location: String,
         date: String,
         vScale: Int,
         isIndoor: Boolean,
-        notes: String
+        notes: String,
+        mediaUrls: List<String> = emptyList()
     ) {
         val newPost = Post (
             id = UUID.randomUUID().toString(),
@@ -34,7 +52,8 @@ class PostViewModel : ViewModel() {
             date = date,
             vScale = vScale,
             isIndoor = isIndoor,
-            notes = notes
+            notes = notes,
+            mediaUrls = mediaUrls
         )
         _activePost.value = newPost
     }
