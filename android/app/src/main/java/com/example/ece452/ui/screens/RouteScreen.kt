@@ -22,13 +22,12 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,7 +63,7 @@ fun RouteScreen(
     var routeName by remember { mutableStateOf(existingRoute?.routeName ?: "My Route") }
     var selectedVDifficulty by remember { mutableStateOf(existingRoute?.difficulty?.removePrefix("V")?.toIntOrNull()) }
     var expanded by remember { mutableStateOf(false) }
-    val vScaleOptions = (0..12).map { "V$it" }
+    var vScale by remember { mutableStateOf(4f) } // default to V4
     var notes by remember { mutableStateOf(existingRoute?.notes ?: "") }
     var tags by remember { mutableStateOf(existingRoute?.tags ?: listOf()) }
     var tagInput by remember { mutableStateOf("") }
@@ -190,20 +189,23 @@ fun RouteScreen(
                     }
                 }
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
-                    vScaleOptions.forEachIndexed { index, label ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            onClick = {
-                                selectedVDifficulty = index
-                                expanded = false
-                            }
-                        )
-                    }
+                    Text(
+                        text = "V-Scale: V${vScale.toInt()}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Slider(
+                        value = vScale,
+                        onValueChange = { vScale = it },
+                        valueRange = 0f..10f,
+                        steps = 9,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 OutlinedTextField(
