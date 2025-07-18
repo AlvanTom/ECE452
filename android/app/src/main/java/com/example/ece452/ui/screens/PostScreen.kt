@@ -21,7 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ece452.ui.viewmodels.PostViewModel
-
+import android.Manifest
 
 import java.util.*
 import android.net.Uri
@@ -33,6 +33,21 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.core.content.FileProvider
+import java.io.File
+import android.os.Environment
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Videocam
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.material.icons.filled.Delete
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,14 +74,70 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
     var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isUploading by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+    var showMediaSourceDialog by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraVideoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCameraAction by remember { mutableStateOf<String?>(null) }
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
 
-    val mediaPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris ->
-        if (uris != null) {
-            selectedMediaUris = uris
+    // Launchers for camera actions
+    val cameraImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && cameraImageUri != null) {
+            selectedMediaUris = listOf(cameraImageUri!!) // Overwrite with new photo
         }
     }
+    val cameraVideoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CaptureVideo()) { success ->
+        if (success && cameraVideoUri != null) {
+            selectedMediaUris = listOf(cameraVideoUri!!) // Overwrite with new video
+        }
+    }
+
+    // Permission launcher (declare this AFTER the above)
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted && pendingCameraAction != null && pendingCameraUri != null) {
+            if (pendingCameraAction == "photo") {
+                cameraImageUri = pendingCameraUri
+                cameraImageLauncher.launch(pendingCameraUri)
+            } else if (pendingCameraAction == "video") {
+                cameraVideoUri = pendingCameraUri // CRITICAL: set before launching
+                cameraVideoLauncher.launch(pendingCameraUri)
+            }
+        }
+        pendingCameraAction = null
+        pendingCameraUri = null
+    }
+
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            selectedMediaUris = listOf(uri) // Only one file at a time
+        }
+    }
+
+    // Helper function to check if a URI is a video file
+    fun isVideoFile(uri: Uri): Boolean {
+        val path = uri.toString().lowercase()
+        return path.endsWith(".mp4") || path.endsWith(".3gp") || path.endsWith(".mkv") || path.contains("video")
+    }
+
+    @Composable
+    fun rememberVideoThumbnail(context: android.content.Context, uri: Uri): Bitmap? {
+        return remember(uri) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(context, uri)
+                val bitmap = retriever.getFrameAtTime(0)
+                retriever.release()
+                bitmap
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
 
     Scaffold(
         content = { innerPadding ->
@@ -212,39 +283,147 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                     Text("Selected Media:", style = MaterialTheme.typography.bodyLarge)
                     Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                         selectedMediaUris.forEach { uri ->
-                            Image(
-                                painter = rememberAsyncImagePainter(uri),
-                                contentDescription = null,
-                                modifier = Modifier.size(80.dp).padding(4.dp),
-                                contentScale = ContentScale.Crop
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .padding(4.dp)
+                            ) {
+                                if (isVideoFile(uri)) {
+                                    val thumbnail = rememberVideoThumbnail(context, uri)
+                                    if (thumbnail != null) {
+                                        Image(
+                                            bitmap = thumbnail.asImageBitmap(),
+                                            contentDescription = "Video thumbnail",
+                                            modifier = Modifier.matchParentSize().clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Videocam,
+                                            contentDescription = "Video",
+                                            modifier = Modifier.matchParentSize()
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(36.dp)
+                                            .drawBehind {
+                                                drawCircle(
+                                                    color = Color.Black.copy(alpha = 0.5f),
+                                                    radius = size.minDimension / 2
+                                                )
+                                            }
+                                    )
+                                } else {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(uri),
+                                        contentDescription = null,
+                                        modifier = Modifier.matchParentSize().clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { selectedMediaUris = emptyList() },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Media",
+                                        tint = Color.Red
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(
-                    onClick = {
-                        mediaPickerLauncher.launch("image/*") // or "video/*" for videos, or "*/*" for both
-                    },
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = secondaryContainerLight,
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .height(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Upload Media",
-                        modifier = Modifier.size(20.dp)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = {
+                            // Launch gallery picker for a single image or video
+                            mediaPickerLauncher.launch("*/*")
+                        },
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = secondaryContainerLight,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Choose from Library",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Library")
+                    }
+                    Button(
+                        onClick = { showMediaSourceDialog = true },
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = secondaryContainerLight,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Camera",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Camera")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (showMediaSourceDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showMediaSourceDialog = false },
+                        title = { Text("Camera Action") },
+                        text = { Text("Take a photo or record a video:") },
+                        confirmButton = {
+                            Column {
+                                TextButton(onClick = {
+                                    showMediaSourceDialog = false
+                                    val photoFile = File(
+                                        context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                                        "camera_photo_${System.currentTimeMillis()}.jpg"
+                                    )
+                                    val uri = FileProvider.getUriForFile(context, context.packageName + ".provider", photoFile)
+                                    pendingCameraAction = "photo"
+                                    pendingCameraUri = uri
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }) { Text("Take Photo") }
+                                TextButton(onClick = {
+                                    showMediaSourceDialog = false
+                                    val videoFile = File(
+                                        context.getExternalFilesDir(Environment.DIRECTORY_MOVIES),
+                                        "camera_video_${System.currentTimeMillis()}.mp4"
+                                    )
+                                    val uri = FileProvider.getUriForFile(context, context.packageName + ".provider", videoFile)
+                                    pendingCameraAction = "video"
+                                    pendingCameraUri = uri
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }) { Text("Record Video") }
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showMediaSourceDialog = false }) { Text("Cancel") }
+                        }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Upload Video/Image")
                 }
 
                 if (uploadError != null) {
