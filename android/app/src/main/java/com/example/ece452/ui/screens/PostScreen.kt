@@ -185,6 +185,27 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                     singleLine = false
                 )
 
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Description") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    trailingIcon = {
+                        if (notes.isNotEmpty()) {
+                            IconButton(onClick = { notes = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear"
+                                )
+                            }
+                        }
+                    },
+                    maxLines = 5,
+                    singleLine = false
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
@@ -218,7 +239,8 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                             date = date,
                             vScale = vScale.toInt(),
                             isIndoor = isIndoor,
-                            notes = notes
+                            notes = notes,
+                            description = notes
                         )
                         postViewModel.saveActivePost()
                     },

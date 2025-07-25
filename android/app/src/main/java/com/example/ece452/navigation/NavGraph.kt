@@ -13,6 +13,7 @@ import com.example.ece452.ui.components.BottomBar
 import com.example.ece452.ui.screens.FeedScreen
 import com.example.ece452.ui.screens.LoginScreen
 import com.example.ece452.ui.screens.PostScreen
+import com.example.ece452.ui.screens.PersonalPostsScreen
 import com.example.ece452.ui.screens.NewSessionScreen
 import com.example.ece452.ui.screens.RouteScreen
 import com.example.ece452.ui.screens.SignupScreen
@@ -44,6 +45,9 @@ fun AppNavHost(modifier: Modifier = Modifier){
         drawerState = drawerState,
         scope = scope,
         onProfileClick = { /* Add profile logic if needed */ },
+        onMyPostsClick = {
+            navController.navigate(Routes.PersonalPosts.name)
+        },
         onLogoutClick = {
             FirebaseConfig.auth.signOut()
             navController.navigate(Routes.Login.name) {
@@ -61,7 +65,7 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 }
             },
             bottomBar = {
-                if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
+                if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name && currentRoute != Routes.PersonalPosts.name) {
                     BottomBar(navController = navController)
                 }
             },
@@ -80,6 +84,9 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 }
                 composable(Routes.Feed.name) {
                     FeedScreen()
+                }
+                composable(Routes.PersonalPosts.name) {
+                    PersonalPostsScreen(navController = navController)
                 }
                 composable(Routes.Sessions.name) {
                     SessionHistoryScreen(navController = navController, sessionViewModel = sessionViewModel)

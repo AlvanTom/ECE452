@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ fun AppDrawer(
     drawerState: DrawerState,
     scope: CoroutineScope,
     onProfileClick: () -> Unit,
+    onMyPostsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -35,6 +37,15 @@ fun AppDrawer(
                         onProfileClick()
                     },
                     icon = { Icon(Icons.Default.Person, contentDescription = "Profile") }
+                )
+                NavigationDrawerItem(
+                    label = { Text("My Posts") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onMyPostsClick()
+                    },
+                    icon = { Icon(Icons.Default.BookmarkBorder, contentDescription = "My Posts") }
                 )
                 Divider()
                 NavigationDrawerItem(
