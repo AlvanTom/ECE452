@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -61,9 +60,7 @@ fun RouteScreen(
     val session by sessionViewModel.activeSession.collectAsState()
     val existingRoute = routeIdx?.let { session?.routes?.getOrNull(it) }
     var routeName by remember { mutableStateOf(existingRoute?.routeName ?: "My Route") }
-    var selectedVDifficulty by remember { mutableStateOf(existingRoute?.difficulty?.removePrefix("V")?.toIntOrNull()) }
-    var expanded by remember { mutableStateOf(false) }
-    var vScale by remember { mutableStateOf(4f) } // default to V4
+    var vScale by remember { mutableStateOf(existingRoute?.difficulty?.removePrefix("V")?.toFloatOrNull() ?: 4f) }
     var notes by remember { mutableStateOf(existingRoute?.notes ?: "") }
     var tags by remember { mutableStateOf(existingRoute?.tags ?: listOf()) }
     var tagInput by remember { mutableStateOf("") }
@@ -74,7 +71,7 @@ fun RouteScreen(
     LaunchedEffect(existingRoute) {
         if (isUpdateMode && existingRoute != null) {
             routeName = existingRoute.routeName
-            selectedVDifficulty = existingRoute.difficulty.removePrefix("V").toIntOrNull()
+            vScale = existingRoute.difficulty.removePrefix("V").toFloatOrNull() ?: 4f
             notes = existingRoute.notes ?: ""
             tags = existingRoute.tags
             attempts = existingRoute.attempts
@@ -109,28 +106,6 @@ fun RouteScreen(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    readOnly = true,
-                    value = selectedVDifficulty?.let { "V$it" } ?: "Select V Difficulty",
-                    onValueChange = {},
-                    label = { Text("V Difficulty") },
-                    trailingIcon = {
-                        IconButton(onClick = { expanded = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Dropdown Icon"
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    enabled = true,
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
 
                 OutlinedTextField(
                     value = tagInput,
@@ -227,7 +202,7 @@ fun RouteScreen(
                             // Add attempt to existing route
                             val updatedRoute = existingRoute?.copy(
                                 routeName = routeName,
-                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
                                 attempts = attempts // keep attempts
@@ -240,7 +215,7 @@ fun RouteScreen(
                             val newRoute = Route(
                                 id = UUID.randomUUID().toString(),
                                 routeName = routeName,
-                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
                                 attempts = emptyList<Attempt>()
@@ -254,7 +229,7 @@ fun RouteScreen(
                         .fillMaxWidth()
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = secondaryLight),
-                    enabled = routeName.isNotBlank() && selectedVDifficulty != null
+                    enabled = routeName.isNotBlank()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -272,7 +247,7 @@ fun RouteScreen(
                         if (isUpdateMode && routeIdx != null) {
                             val updatedRoute = existingRoute?.copy(
                                 routeName = routeName,
-                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
                                 attempts = attempts
@@ -285,7 +260,7 @@ fun RouteScreen(
                             val newRoute = Route(
                                 id = UUID.randomUUID().toString(),
                                 routeName = routeName,
-                                difficulty = selectedVDifficulty?.let { "V$it" } ?: "",
+                                difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
                                 attempts = emptyList<Attempt>()
@@ -299,7 +274,7 @@ fun RouteScreen(
                         .fillMaxWidth()
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryContainerDark),
-                    enabled = routeName.isNotBlank() && selectedVDifficulty != null
+                    enabled = routeName.isNotBlank()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Save,
