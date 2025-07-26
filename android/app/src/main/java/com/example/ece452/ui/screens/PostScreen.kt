@@ -24,6 +24,15 @@ import com.example.ece452.ui.viewmodels.PostViewModel
 
 
 import java.util.*
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.horizontalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +53,20 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
     val datePickerState = rememberDatePickerState()
     val scrollState = rememberScrollState()
     val showDatePicker = remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var isUploading by remember { mutableStateOf(false) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
+
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris != null) {
+            selectedMediaUris = uris
+        }
+    }
 
     Scaffold(
         content = { innerPadding ->
@@ -185,11 +208,25 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                     singleLine = false
                 )
 
+                if (selectedMediaUris.isNotEmpty()) {
+                    Text("Selected Media:", style = MaterialTheme.typography.bodyLarge)
+                    Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                        selectedMediaUris.forEach { uri ->
+                            Image(
+                                painter = rememberAsyncImagePainter(uri),
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp).padding(4.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
-                        // TODO: Handle media upload
+                        mediaPickerLauncher.launch("image/*") // or "video/*" for videos, or "*/*" for both
                     },
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(
@@ -210,23 +247,44 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                     Text(text = "Upload Video/Image")
                 }
 
+                if (uploadError != null) {
+                    Text(uploadError!!, color = MaterialTheme.colorScheme.error)
+                }
+                if (isUploading) {
+                    CircularProgressIndicator()
+                }
                 Button(
                     onClick = {
-                        postViewModel.createPost(
-                            title = title,
-                            location = location,
-                            date = date,
-                            vScale = vScale.toInt(),
-                            isIndoor = isIndoor,
-                            notes = notes
-                        )
-                        postViewModel.saveActivePost()
+                        isUploading = true
+                        uploadError = null
+                        coroutineScope.launch {
+                            try {
+                                val userId = "user" // TODO: Replace with actual user ID from auth
+                                val urls = postViewModel.uploadMediaFiles(selectedMediaUris, userId)
+                                postViewModel.createPost(
+                                    title = title,
+                                    location = location,
+                                    date = date,
+                                    vScale = vScale.toInt(),
+                                    isIndoor = isIndoor,
+                                    notes = notes,
+                                    mediaUrls = urls
+                                )
+                                postViewModel.saveActivePost()
+                                selectedMediaUris = emptyList()
+                            } catch (e: Exception) {
+                                uploadError = e.localizedMessage ?: "Failed to upload media."
+                            } finally {
+                                isUploading = false
+                            }
+                        }
                     },
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    enabled = !isUploading
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -234,7 +292,7 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Post!", fontSize = 16.sp)
+                    Text(text = if (isUploading) "Posting..." else "Post!", fontSize = 16.sp)
                 }
             }
         }
