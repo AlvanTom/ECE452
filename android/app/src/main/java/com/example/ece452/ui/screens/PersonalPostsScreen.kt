@@ -18,6 +18,8 @@ import androidx.navigation.NavController
 import com.example.ece452.ui.components.*
 import com.example.ece452.ui.theme.*
 import com.example.ece452.ui.viewmodels.PostViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +28,10 @@ fun PersonalPostsScreen(
     modifier: Modifier = Modifier,
     postViewModel: PostViewModel = viewModel()
 ) {
+    // Check if user is verified
+    val currentUser = Firebase.auth.currentUser
+    val isVerifiedUser = currentUser?.email == "fiontest@gmail.com"
+    
     val personalPosts by postViewModel.personalPosts.collectAsState()
     val comments by postViewModel.comments.collectAsState()
     
@@ -58,13 +64,35 @@ fun PersonalPostsScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .background(backgroundLight)
-                .padding(innerPadding)
-        ) {
-            if (personalPosts.isEmpty()) {
+        if (!isVerifiedUser) {
+            // Show verification message for non-verified users
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(backgroundLight)
+                    .padding(innerPadding)
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Become a verified user in order to post!",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        } else {
+            // Show normal posts screen for verified users
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(backgroundLight)
+                    .padding(innerPadding)
+            ) {
+                if (personalPosts.isEmpty()) {
                 // Empty state
                 Box(
                     modifier = Modifier
@@ -118,6 +146,7 @@ fun PersonalPostsScreen(
                 }
             }
         }
+    }
     }
     
     // Comments modal

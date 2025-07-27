@@ -32,6 +32,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.ece452.ui.components.TopBar
 import com.example.ece452.ui.screens.UserProfileScreen
+import com.example.ece452.ui.viewmodels.UserProfileViewModel
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
@@ -39,17 +40,22 @@ fun AppNavHost(modifier: Modifier = Modifier){
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
     val sessionViewModel: SessionViewModel = viewModel()
+    val userProfileViewModel: UserProfileViewModel = viewModel()
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     AppDrawer(
         drawerState = drawerState,
         scope = scope,
-        onProfileClick = { /* Add profile logic if needed */ },
+        onProfileClick = {
+            navController.navigate(Routes.UserProfile.name)
+        },
         onMyPostsClick = {
             navController.navigate(Routes.PersonalPosts.name)
         },
         onLogoutClick = {
+            // Clear the profile photo before signing out
+            userProfileViewModel.clearProfilePhoto()
             FirebaseConfig.auth.signOut()
             navController.navigate(Routes.Login.name) {
                 popUpTo(0) { inclusive = true }
@@ -61,7 +67,10 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 if (currentRoute != Routes.Login.name && currentRoute != Routes.Signup.name) {
                     TopBar(
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onProfileClick = { scope.launch { drawerState.open() } },
+                        onProfileClick = {
+                            navController.navigate(Routes.UserProfile.name)
+                        },
+                        userProfileViewModel = userProfileViewModel
                     )
                 }
             },
@@ -95,8 +104,8 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 composable(Routes.Posts.name) {
                     PostScreen()
                 }
-                composable (Routes.UserProfile.name){
-                    UserProfileScreen()
+                composable(Routes.UserProfile.name) {
+                    UserProfileScreen(userProfileViewModel = userProfileViewModel)
                 }
                 composable(
                     "${Routes.NewSession.name}?sessionId={sessionId}",
