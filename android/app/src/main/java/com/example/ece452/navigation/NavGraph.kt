@@ -31,6 +31,7 @@ import com.example.ece452.ui.components.AppDrawer
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.ece452.ui.components.TopBar
+import com.example.ece452.ui.screens.UserProfileScreen
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier){
@@ -93,6 +94,9 @@ fun AppNavHost(modifier: Modifier = Modifier){
                 }
                 composable(Routes.Posts.name) {
                     PostScreen()
+                }
+                composable (Routes.UserProfile.name){
+                    UserProfileScreen()
                 }
                 composable(
                     "${Routes.NewSession.name}?sessionId={sessionId}",

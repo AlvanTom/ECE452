@@ -82,9 +82,11 @@ class SessionViewModel : ViewModel() {
             gym.ifBlank { wallName }
         }
 
+        val currentUserId = authService.getCurrentUserId() ?: return
+
         val newSession = Session(
             id = "", // Empty ID indicates a new session
-            userId = "local_user", // Placeholder for local development
+            userId = currentUserId, // Use actual Firebase user ID
             title = title,
             location = location,
             isIndoor = true,
@@ -107,17 +109,13 @@ class SessionViewModel : ViewModel() {
 
     suspend fun endActiveSession(): Boolean {
         val session = activeSession.value ?: return false
-        val currentUserId = authService.getCurrentUserId() ?: return false
 
         _isEndingSession.value = true
         clearError()
         
         return try {
             // Debug: Print session info
-            println("Ending session - ID: '${session.id}', UserID: '${session.userId}', CurrentUserID: '$currentUserId'")
-            
-            // Update session with real user ID before sending to backend
-            val sessionWithUserId = session.copy(userId = currentUserId)
+            println("Ending session - ID: '${session.id}', UserID: '${session.userId}'")
             
             val result = if (session.id.isNotEmpty()) {
                 // Session already exists in backend, update it
@@ -132,7 +130,7 @@ class SessionViewModel : ViewModel() {
             result.fold(
                 onSuccess = { sessionId ->
                     println("Session saved successfully with ID: $sessionId")
-                    val finalSession = sessionWithUserId.copy(id = sessionId)
+                    val finalSession = session.copy(id = sessionId)
                     
                     // Update local session history immediately
                     _sessionHistory.update { currentHistory ->

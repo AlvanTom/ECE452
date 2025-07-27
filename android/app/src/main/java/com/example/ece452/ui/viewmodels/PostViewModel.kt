@@ -12,6 +12,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.util.*
 import kotlin.random.Random
+import android.net.Uri
+import com.example.ece452.firebase.FirebaseConfig
+import com.google.firebase.storage.StorageReference
+import kotlinx.coroutines.tasks.await
 
 class PostViewModel : ViewModel() {
 
@@ -39,6 +43,19 @@ class PostViewModel : ViewModel() {
 
     init {
         loadMorePosts()
+    }
+
+    suspend fun uploadMediaFiles(uris: List<Uri>, userId: String): List<String> {
+        val storage = FirebaseConfig.storage
+        val urls = mutableListOf<String>()
+        for (uri in uris) {
+            val fileName = "${userId}_${System.currentTimeMillis()}_${uri.lastPathSegment}"
+            val ref: StorageReference = storage.reference.child("post_media/$fileName")
+            val uploadTask = ref.putFile(uri).await()
+            val url = ref.downloadUrl.await().toString()
+            urls.add(url)
+        }
+        return urls
     }
 
     fun createPost(

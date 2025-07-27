@@ -1,5 +1,5 @@
 [versions]
-agp = "8.10.1"
+agp = "8.10.0"
 kotlin = "2.0.21"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -14,7 +14,7 @@ navigationComposeAndroid = "2.9.0"
 firebaseBom = "32.7.4"
 googleServices = "4.4.1"
 coroutinesPlayServices = "1.8.0"
-coil = "2.5.0"
+firebaseStorageKtx = "21.0.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,8 +37,10 @@ androidx-navigation-compose-android = { group = "androidx.navigation", name = "n
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
-coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version = "2.7.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

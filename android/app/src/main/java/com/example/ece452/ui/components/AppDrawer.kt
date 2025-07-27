@@ -11,8 +11,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import com.example.ece452.navigation.Routes
 
 @Composable
 fun AppDrawer(
@@ -29,14 +31,23 @@ fun AppDrawer(
                 modifier = Modifier.width(260.dp)
             ) {
                 Spacer(Modifier.height(32.dp))
+
+                // Navigate to UserProfileScreen
                 NavigationDrawerItem(
                     label = { Text("Profile") },
                     selected = false,
                     onClick = {
-                        scope.launch { drawerState.close() }
-                        onProfileClick()
+                        scope.launch {
+                            drawerState.close()
+                            onProfileClick()
+                        }
                     },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") }
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile"
+                        )
+                    }
                 )
                 NavigationDrawerItem(
                     label = { Text("My Posts") },
@@ -47,15 +58,31 @@ fun AppDrawer(
                     },
                     icon = { Icon(Icons.Default.BookmarkBorder, contentDescription = "My Posts") }
                 )
+
                 Divider()
+
+                // Logout item
                 NavigationDrawerItem(
-                    label = { Text("Logout", color = MaterialTheme.colorScheme.error) },
+                    label = {
+                        Text(
+                            text = "Logout",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
                     selected = false,
                     onClick = {
-                        scope.launch { drawerState.close() }
-                        onLogoutClick()
+                        scope.launch {
+                            drawerState.close()
+                            onLogoutClick()
+                        }
                     },
-                    icon = { Icon(Icons.Default.Logout, contentDescription = "Logout", tint = MaterialTheme.colorScheme.error) }
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 )
             }
         },
@@ -64,4 +91,4 @@ fun AppDrawer(
     ) {
         content()
     }
-} 
+}
