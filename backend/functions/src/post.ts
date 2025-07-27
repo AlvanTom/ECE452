@@ -55,3 +55,32 @@ export const createPost = functions.https.onCall(async (request) => {
   return { postId: postRef.id };
 
 });
+
+// Returns all verified posts in the database
+export const getFeed = functions.https.onCall(async (request) => {
+    // Check if user is authenticated
+  if (!request.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be logged in"
+    );
+  }
+
+  const userRef = db.collection("users").doc("9R0NeLXu6fY7ziTyQH7Cw6UhWPh1");
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    return { posts: [] };
+  }
+
+  const postsSnapshot = await db
+    .collection("posts")
+    .where("userId", "==", "9R0NeLXu6fY7ziTyQH7Cw6UhWPh1")
+    .get();
+
+  const postsData = postsSnapshot.docs.map((doc) => ({
+    id: doc.id,        
+    ...doc.data()
+  }));
+  return { posts: postsData };
+});
