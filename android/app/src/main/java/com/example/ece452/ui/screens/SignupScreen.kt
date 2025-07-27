@@ -1,5 +1,6 @@
 package com.example.ece452.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,11 +10,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.ece452.R
 import com.example.ece452.ui.login.SignupState
 import com.example.ece452.ui.login.SignupViewModel
 import com.example.ece452.ui.theme.AppTypography
@@ -56,13 +59,12 @@ fun SignupScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Logo/Title
-            Text(
-                text = "Climbr",
-                style = AppTypography.displayMedium.copy(
-                    color = primaryLight,
-                    fontSize = 36.sp
-                ),
-                modifier = Modifier.padding(bottom = 32.dp)
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Climbr Logo",
+                modifier = Modifier
+                    .height(72.dp)
+                    .padding(bottom = 32.dp)
             )
 
             // Sign in box

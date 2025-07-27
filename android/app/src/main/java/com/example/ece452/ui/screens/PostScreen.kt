@@ -447,6 +447,7 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                                     vScale = vScale.toInt(),
                                     isIndoor = isIndoor,
                                     notes = notes,
+                                    description = notes,
                                     mediaUrls = urls
                                 )
                                 postViewModel.saveActivePost()

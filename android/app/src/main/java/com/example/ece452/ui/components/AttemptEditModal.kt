@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,79 +29,133 @@ fun AttemptEditModal(
     if (show && attempt != null) {
         ModalBottomSheet(
             onDismissRequest = onDismiss,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Edit Attempt", style = MaterialTheme.typography.titleLarge)
-                Spacer(Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Status:")
-                    Spacer(Modifier.width(16.dp))
-                    // Success Toggle
+                Text(
+                    "Edit Attempt", 
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(24.dp))
+                
+                // Status section
+                Text(
+                    "Status:", 
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Success Button
                     Button(
                         onClick = { onStatusChange(true) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (attempt.success) Color(0xFF4B6536) else Color.LightGray,
-                            contentColor = if (attempt.success) Color.White else Color.DarkGray
+                            containerColor = if (attempt.success) 
+                                MaterialTheme.colorScheme.primaryContainer
+                            else 
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (attempt.success) 
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else 
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Success"
+                            contentDescription = "Success",
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(8.dp))
                         Text("Success")
                     }
-                    Spacer(Modifier.width(8.dp))
-                    // Fail Toggle
+                    
+                    Spacer(Modifier.width(12.dp))
+                    
+                    // Fail Button
                     Button(
                         onClick = { onStatusChange(false) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (!attempt.success) Color(0xFFB00020) else Color.LightGray,
-                            contentColor = if (!attempt.success) Color.White else Color.DarkGray
+                            containerColor = if (!attempt.success) 
+                                MaterialTheme.colorScheme.errorContainer
+                            else 
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (!attempt.success) 
+                                    MaterialTheme.colorScheme.onErrorContainer
+                            else 
+                                MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cancel,
-                            contentDescription = "Fail"
+                            contentDescription = "Fail",
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(8.dp))
                         Text("Fail")
                     }
                 }
-                Spacer(Modifier.height(24.dp))
+                
+                Spacer(Modifier.height(32.dp))
+                
+                // Action buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
                         onClick = onDelete,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = Color.White
-                        )
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        Icon(
+                            Icons.Default.Delete, 
+                            contentDescription = "Delete",
+                            modifier = Modifier.size(20.dp)
+                        )
                         Spacer(Modifier.width(8.dp))
-                        Text("Delete Attempt")
+                        Text("Delete")
                     }
+                    
                     Button(
                         onClick = onSave,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
-                        )
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
-                        Text("Save Attempt")
+                        Icon(
+                            Icons.Default.Save, 
+                            contentDescription = "Save",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Save")
                     }
                 }
+                
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
