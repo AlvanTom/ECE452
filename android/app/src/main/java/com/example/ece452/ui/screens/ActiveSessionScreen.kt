@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import com.example.ece452.data.Attempt
 import com.example.ece452.data.Route
 import com.example.ece452.navigation.Routes
@@ -236,6 +241,26 @@ fun RouteListItem(route: Route, isExpanded: Boolean, onClick: () -> Unit, onAtte
             }
         }
         if (isExpanded) {
+            // Show media if available
+            route.mediaUri?.let { mediaUri ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = mediaUri,
+                        contentDescription = "Route media",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+            
             route.attempts.forEachIndexed { idx, attempt ->
                 AttemptListItem(attempt, idx) { onAttemptClick(idx, attempt) }
             }

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -86,6 +87,9 @@ fun RouteScreen(
     val scrollState = rememberScrollState()
     val isUpdateMode = routeIdx != null
 
+    val context = LocalContext.current
+    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
     LaunchedEffect(existingRoute) {
         if (isUpdateMode && existingRoute != null) {
             routeName = existingRoute.routeName
@@ -93,11 +97,10 @@ fun RouteScreen(
             notes = existingRoute.notes ?: ""
             tags = existingRoute.tags
             attempts = existingRoute.attempts
+            // Initialize selected media from existing route if available
+            selectedMediaUris = existingRoute.mediaUri?.let { listOf(Uri.parse(it)) } ?: emptyList()
         }
     }
-
-    val context = LocalContext.current
-    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var showMediaSourceDialog by remember { mutableStateOf(false) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var cameraVideoUri by remember { mutableStateOf<Uri?>(null) }
@@ -292,7 +295,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = attempts // keep attempts
+                                attempts = attempts, // keep attempts
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString() ?: existingRoute.mediaUri
                             )
                             if (updatedRoute != null) {
                                 sessionViewModel.updateRoute(routeIdx, updatedRoute)
@@ -305,7 +309,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = emptyList<Attempt>()
+                                attempts = emptyList<Attempt>(),
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString()
                             )
                             sessionViewModel.addRouteToActiveSession(newRoute)
                             navController.navigate(Routes.Attempt.name)
@@ -330,6 +335,31 @@ fun RouteScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // --- MEDIA UPLOAD UI ---
+                
+                // Show current media if available
+                selectedMediaUris.firstOrNull()?.let { mediaUri ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Current Media:",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        AsyncImage(
+                            model = mediaUri,
+                            contentDescription = "Route media",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+                
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = {
@@ -481,7 +511,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = attempts
+                                attempts = attempts,
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString() ?: existingRoute.mediaUri
                             )
                             if (updatedRoute != null) {
                                 sessionViewModel.updateRoute(routeIdx, updatedRoute)
@@ -494,7 +525,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = emptyList<Attempt>()
+                                attempts = emptyList<Attempt>(),
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString()
                             )
                             sessionViewModel.addRouteToActiveSession(newRoute)
                             navController.popBackStack()

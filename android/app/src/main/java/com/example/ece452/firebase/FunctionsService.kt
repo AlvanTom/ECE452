@@ -6,6 +6,11 @@ import com.example.ece452.data.Route
 import com.example.ece452.data.Attempt
 import kotlinx.coroutines.tasks.await
 
+data class SessionCreationResult(
+    val sessionId: String,
+    val routeIds: List<String>
+)
+
 class FunctionsService {
     
     private val functions: FirebaseFunctions = FirebaseConfig.functions
@@ -47,7 +52,7 @@ class FunctionsService {
         return callFunction("createUser", data)
     }
 
-    suspend fun createSession(session: Session): Result<String> {
+    suspend fun createSession(session: Session): Result<SessionCreationResult> {
         val backendRoutes = session.routes.map { route ->
             mapOf(
                 "routeName" to route.routeName,
@@ -59,7 +64,8 @@ class FunctionsService {
                         "success" to attempt.success,
                         "createdAt" to attempt.createdAt
                     )
-                }
+                },
+                "mediaUrl" to route.mediaUri // Include media URL (will be local URI for new routes)
             )
         }
 
@@ -75,10 +81,12 @@ class FunctionsService {
         return callFunction("createSession", data).fold(
             onSuccess = { responseData ->
                 val sessionId = responseData?.get("sessionId") as? String
-                if (sessionId != null) {
-                    Result.success(sessionId)
+                val routeIds = responseData?.get("routeIds") as? List<*>
+                if (sessionId != null && routeIds != null) {
+                    val routeIdStrings = routeIds.filterIsInstance<String>()
+                    Result.success(SessionCreationResult(sessionId, routeIdStrings))
                 } else {
-                    Result.failure(Exception("Invalid response: missing sessionId"))
+                    Result.failure(Exception("Invalid response: missing sessionId or routeIds"))
                 }
             },
             onFailure = { exception ->
@@ -130,7 +138,8 @@ class FunctionsService {
                                 difficulty = routeMap["difficulty"] as? String ?: "",
                                 tags = (routeMap["tags"] as? List<String>) ?: emptyList(),
                                 notes = routeMap["notes"] as? String,
-                                attempts = attempts
+                                attempts = attempts,
+                                mediaUri = routeMap["mediaUrl"] as? String  // Map backend mediaUrl to frontend mediaUri
                             )
                         }
                         
@@ -160,7 +169,7 @@ class FunctionsService {
         )
     }
 
-    suspend fun updateSession(session: Session): Result<String> {
+    suspend fun updateSession(session: Session): Result<SessionCreationResult> {
         println("[DEBUG] updateSession called with session: $session")
         val backendRoutes = session.routes.map { route ->
             mapOf(
@@ -173,7 +182,8 @@ class FunctionsService {
                         "success" to attempt.success,
                         "createdAt" to attempt.createdAt
                     )
-                }
+                },
+                "mediaUrl" to route.mediaUri // Include existing media URL to preserve it
             )
         }
 
@@ -187,11 +197,31 @@ class FunctionsService {
         return callFunction("putSession", data).fold(
             onSuccess = { responseData ->
                 val sessionId = responseData?.get("sessionId") as? String
-                if (sessionId != null) {
-                    Result.success(sessionId)
+                val routeIds = responseData?.get("routeIds") as? List<*>
+                if (sessionId != null && routeIds != null) {
+                    val routeIdStrings = routeIds.filterIsInstance<String>()
+                    Result.success(SessionCreationResult(sessionId, routeIdStrings))
                 } else {
-                    Result.failure(Exception("Invalid response: missing sessionId"))
+                    Result.failure(Exception("Invalid response: missing sessionId or routeIds"))
                 }
+            },
+            onFailure = { exception ->
+                Result.failure(exception)
+            }
+        )
+    }
+
+    suspend fun updateRouteMedia(sessionId: String, routeId: String, mediaUrl: String): Result<Boolean> {
+        val data = mapOf(
+            "sessionId" to sessionId,
+            "routeId" to routeId,
+            "mediaUrl" to mediaUrl
+        )
+
+        return callFunction("updateRouteMedia", data).fold(
+            onSuccess = { responseData ->
+                val success = responseData?.get("success") as? Boolean
+                Result.success(success ?: false)
             },
             onFailure = { exception ->
                 Result.failure(exception)
