@@ -49,3 +49,57 @@ export const createUser = functions.https.onCall(async (request) => {
     throw new functions.https.HttpsError("internal", "Failed to create user");
   }
 });
+
+export const updateUser = functions.https.onCall(async (request) => {
+  // Check if the user is authenticated
+  if (!request.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be authenticated to update user profile"
+    );
+  }
+
+  const { displayName, email }: { displayName?: string; email?: string } =
+    request.data;
+  const userId = request.auth.uid;
+
+  // Validate that at least one field is provided for update
+  if (!displayName && !email) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "At least one field (displayName or email) must be provided for update"
+    );
+  }
+
+  try {
+    // Create update data object with only provided fields
+    const updateData: any = {
+      updatedAt: admin.firestore.Timestamp.now(),
+    };
+
+    if (displayName !== undefined) {
+      updateData.displayName = displayName;
+    }
+
+    if (email !== undefined) {
+      updateData.email = email;
+    }
+
+    // Update the user document
+    await db.collection("users").doc(userId).update(updateData);
+
+    // Get the updated user data
+    const userDoc = await db.collection("users").doc(userId).get();
+    const userData = userDoc.data();
+
+    return {
+      success: true,
+      message: "User updated successfully",
+      userId: userId,
+      userData: userData,
+    };
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw new functions.https.HttpsError("internal", "Failed to update user");
+  }
+});

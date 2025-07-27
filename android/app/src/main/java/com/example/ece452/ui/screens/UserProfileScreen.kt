@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,8 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.auth.ktx.auth
+import com.example.ece452.firebase.FunctionsService
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,6 +32,8 @@ import java.util.*
 fun UserProfileScreen() {
     val user = Firebase.auth.currentUser
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    val functionsService = remember { FunctionsService() }
 
     val db = Firebase.firestore
     val uid = user?.uid
@@ -183,19 +188,30 @@ fun UserProfileScreen() {
                 onDismissRequest = { showEditDialog = false },
                 confirmButton = {
                     TextButton(onClick = {
-                        val currentUser = Firebase.auth.currentUser
-                        currentUser?.let {
-                            val profileUpdates = UserProfileChangeRequest.Builder()
-                                .setDisplayName(newUsername)
-                                .build()
-                            it.updateProfile(profileUpdates)
-                                .addOnSuccessListener {
-                                    feedback = "Username updated successfully!"
-                                    showEditDialog = false
+                        scope.launch {
+                            val result = functionsService.updateUser(displayName = newUsername)
+                            result.fold(
+                                onSuccess = { responseData ->
+                                    // Also update Firebase Auth display name for consistency
+                                    val currentUser = Firebase.auth.currentUser
+                                    currentUser?.let {
+                                        val profileUpdates = UserProfileChangeRequest.Builder()
+                                            .setDisplayName(newUsername)
+                                            .build()
+                                        it.updateProfile(profileUpdates)
+                                            .addOnSuccessListener {
+                                                feedback = "Username updated successfully!"
+                                                showEditDialog = false
+                                            }
+                                            .addOnFailureListener { e ->
+                                                feedback = "Username updated in database but failed to update in app: ${e.message}"
+                                            }
+                                    }
+                                },
+                                onFailure = { exception ->
+                                    feedback = "Username update failed: ${exception.message}"
                                 }
-                                .addOnFailureListener { e ->
-                                    feedback = "Username update failed: ${e.message}"
-                                }
+                            )
                         }
                     }) {
                         Text("Save")

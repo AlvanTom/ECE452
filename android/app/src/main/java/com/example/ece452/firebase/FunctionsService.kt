@@ -47,6 +47,14 @@ class FunctionsService {
         return callFunction("createUser", data)
     }
 
+    suspend fun updateUser(displayName: String? = null, email: String? = null): Result<Map<String, Any>?> {
+        val data = buildMap<String, Any> {
+            displayName?.let { put("displayName", it) }
+            email?.let { put("email", it) }
+        }
+        return callFunction("updateUser", data)
+    }
+
     suspend fun createSession(session: Session): Result<String> {
         val backendRoutes = session.routes.map { route ->
             mapOf(
