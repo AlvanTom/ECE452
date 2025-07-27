@@ -25,7 +25,6 @@ fun FeedScreen(
     val hasMorePosts by postViewModel.hasMorePosts.collectAsState()
     val comments by postViewModel.comments.collectAsState()
     
-    var searchQuery by remember { mutableStateOf("") }
     var showCommentsModal by remember { mutableStateOf(false) }
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     
@@ -36,15 +35,6 @@ fun FeedScreen(
             .fillMaxSize()
             .background(backgroundLight)
     ) {
-        // Search bar
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = { searchQuery = it },
-            onSearch = {
-                // TODO: Implement search functionality
-            }
-        )
-        
         // Feed content
         LazyColumn(
             state = listState,

@@ -71,7 +71,7 @@ class PostViewModel : ViewModel() {
         val newPost = Post(
             id = UUID.randomUUID().toString(),
             userId = "current_user", // TODO: Get from auth
-            username = "current_user", // TODO: Get from auth
+            username = "Me", // TODO: Get from auth
             title = title,
             location = location,
             date = date,
@@ -161,7 +161,7 @@ class PostViewModel : ViewModel() {
             id = UUID.randomUUID().toString(),
             postId = postId,
             userId = "current_user",
-            username = "current_user",
+            username = "Me",
             content = content,
             timestamp = System.currentTimeMillis()
         )
