@@ -60,6 +60,8 @@ dependencies {
     implementation(libs.firebase.functions)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation("com.google.firebase:firebase-firestore-ktx:24.10.3")
+    implementation(libs.firebase.storage)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -50,8 +50,26 @@ import com.example.ece452.navigation.Routes
 import com.example.ece452.ui.theme.backgroundLight
 import com.example.ece452.ui.theme.primaryContainerDark
 import com.example.ece452.ui.theme.secondaryLight
+import com.example.ece452.ui.theme.secondaryContainerLight
 import com.example.ece452.ui.viewmodels.SessionViewModel
 import java.util.UUID
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.Delete
 
 @Composable
 fun RouteScreen(
@@ -79,6 +97,65 @@ fun RouteScreen(
             notes = existingRoute.notes ?: ""
             tags = existingRoute.tags
             attempts = existingRoute.attempts
+        }
+    }
+
+    val context = LocalContext.current
+    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var showMediaSourceDialog by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraVideoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCameraAction by remember { mutableStateOf<String?>(null) }
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            selectedMediaUris = listOf(uri)
+        }
+    }
+    val cameraImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && cameraImageUri != null) {
+            selectedMediaUris = listOf(cameraImageUri!!)
+        }
+    }
+    val cameraVideoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CaptureVideo()) { success ->
+        if (success && cameraVideoUri != null) {
+            selectedMediaUris = listOf(cameraVideoUri!!)
+        }
+    }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted && pendingCameraAction != null && pendingCameraUri != null) {
+            if (pendingCameraAction == "photo") {
+                cameraImageUri = pendingCameraUri
+                cameraImageLauncher.launch(pendingCameraUri)
+            } else if (pendingCameraAction == "video") {
+                cameraVideoUri = pendingCameraUri
+                cameraVideoLauncher.launch(pendingCameraUri)
+            }
+        }
+        pendingCameraAction = null
+        pendingCameraUri = null
+    }
+    fun isVideoFile(uri: Uri): Boolean {
+        val path = uri.toString().lowercase()
+        return path.endsWith(".mp4") || path.endsWith(".3gp") || path.endsWith(".mkv") || path.contains("video")
+    }
+    @Composable
+    fun rememberVideoThumbnail(context: android.content.Context, uri: Uri): Bitmap? {
+        return remember(uri) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(context, uri)
+                val bitmap = retriever.getFrameAtTime(0)
+                retriever.release()
+                bitmap
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
@@ -262,6 +339,150 @@ fun RouteScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = if (isUpdateMode) "Add Attempt" else "Add Attempt", fontSize = 16.sp)
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- MEDIA UPLOAD UI ---
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = {
+                            mediaPickerLauncher.launch("*/*")
+                        },
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = secondaryContainerLight,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Choose from Library",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Library")
+                    }
+                    Button(
+                        onClick = { showMediaSourceDialog = true },
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = secondaryContainerLight,
+                            contentColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Camera",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Camera")
+                    }
+                }
+                if (showMediaSourceDialog) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showMediaSourceDialog = false },
+                        title = { Text("Camera Action") },
+                        text = { Text("Take a photo or record a video:") },
+                        confirmButton = {
+                            Column {
+                                androidx.compose.material3.TextButton(onClick = {
+                                    showMediaSourceDialog = false
+                                    val photoFile = java.io.File(
+                                        context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES),
+                                        "camera_photo_${System.currentTimeMillis()}.jpg"
+                                    )
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".provider", photoFile)
+                                    pendingCameraAction = "photo"
+                                    pendingCameraUri = uri
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }) { Text("Take Photo") }
+                                androidx.compose.material3.TextButton(onClick = {
+                                    showMediaSourceDialog = false
+                                    val videoFile = java.io.File(
+                                        context.getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES),
+                                        "camera_video_${System.currentTimeMillis()}.mp4"
+                                    )
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".provider", videoFile)
+                                    pendingCameraAction = "video"
+                                    pendingCameraUri = uri
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }) { Text("Record Video") }
+                            }
+                        },
+                        dismissButton = {
+                            androidx.compose.material3.TextButton(onClick = { showMediaSourceDialog = false }) { Text("Cancel") }
+                        }
+                    )
+                }
+                if (selectedMediaUris.isNotEmpty()) {
+                    Text("Selected Media:", style = MaterialTheme.typography.bodyLarge)
+                    Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                        selectedMediaUris.forEach { uri ->
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .padding(4.dp)
+                            ) {
+                                if (isVideoFile(uri)) {
+                                    val thumbnail = rememberVideoThumbnail(context, uri)
+                                    if (thumbnail != null) {
+                                        Image(
+                                            bitmap = thumbnail.asImageBitmap(),
+                                            contentDescription = "Video thumbnail",
+                                            modifier = Modifier.matchParentSize().clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Videocam,
+                                            contentDescription = "Video",
+                                            modifier = Modifier.matchParentSize()
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(36.dp)
+                                            .drawBehind {
+                                                drawCircle(
+                                                    color = Color.Black.copy(alpha = 0.5f),
+                                                    radius = size.minDimension / 2
+                                                )
+                                            }
+                                    )
+                                } else {
+                                    Image(
+                                        painter = coil.compose.rememberAsyncImagePainter(uri),
+                                        contentDescription = null,
+                                        modifier = Modifier.matchParentSize().clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { selectedMediaUris = emptyList() },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Media",
+                                        tint = Color.Red
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                // --- END MEDIA UPLOAD UI ---
 
                 Spacer(modifier = Modifier.height(24.dp))
 
