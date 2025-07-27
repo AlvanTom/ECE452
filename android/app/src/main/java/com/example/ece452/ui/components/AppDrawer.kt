@@ -39,8 +39,8 @@ fun AppDrawer(
                     onClick = {
                         scope.launch {
                             drawerState.close()
-                            onProfileClick()
                         }
+                        onProfileClick()
                     },
                     icon = {
                         Icon(

@@ -16,7 +16,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.ece452.R
+import com.example.ece452.ui.viewmodels.UserProfileViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,8 +32,10 @@ fun TopBar(
     modifier: Modifier = Modifier,
     title: String = "Climbr",
     onProfileClick: () -> Unit = {},
-    onMenuClick: () -> Unit = {}
+    onMenuClick: () -> Unit = {},
+    userProfileViewModel: UserProfileViewModel? = null
 ) {
+    val viewModel = userProfileViewModel ?: viewModel<UserProfileViewModel>()
     Surface(
         tonalElevation = 2.dp,
         shadowElevation = 2.dp,
@@ -57,12 +67,38 @@ fun TopBar(
                 )
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = onProfileClick) {
+                    val profilePhotoUrl by viewModel.profilePhotoUrl.collectAsState()
+                    val currentUser = Firebase.auth.currentUser
+                    
                     Surface(
                         shape = CircleShape,
                         color = Color(0xFFF3F1F6),
                         modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color(0xFFB0AEB8), modifier = Modifier.padding(6.dp))
+                        if (profilePhotoUrl != null) {
+                            // Show actual profile photo
+                            Image(
+                                painter = rememberAsyncImagePainter(profilePhotoUrl),
+                                contentDescription = "Profile",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            // Show placeholder with user's initial
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = currentUser?.displayName?.take(1)?.uppercase() ?: "?",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFFB0AEB8),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
             }
