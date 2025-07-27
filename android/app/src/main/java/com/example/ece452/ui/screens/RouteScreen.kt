@@ -162,28 +162,29 @@ fun RouteScreen(
                     .padding(innerPadding)
                     .fillMaxSize()
                     .background(backgroundLight)
-                    .padding(16.dp)
+                    .padding(20.dp)
                     .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Header
                 Text(
                     text = if (isUpdateMode) "Edit Route" else "New Route",
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier.padding(bottom = 24.dp)
                 )
+                
+                // Route Name Field
                 OutlinedTextField(
                     value = routeName,
                     onValueChange = { routeName = it },
                     label = { Text("Route Name") },
                     placeholder = { Text("e.g. Main Wall V3") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
+                // V Difficulty Field
                 OutlinedTextField(
                     value = tagInput,
                     onValueChange = { tagInput = it },
@@ -208,32 +209,38 @@ fun RouteScreen(
                     }
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Tags Display
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     tags.forEach { tag ->
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                             ) {
-                                Text(text = tag)
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = tag,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
                                 IconButton(
                                     onClick = { tags = tags - tag },
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(24.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = "Remove tag",
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
                             }
@@ -260,18 +267,21 @@ fun RouteScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Notes Field
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text("Notes (optional)") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp), // multiline height
+                        .height(120.dp),
                     singleLine = false,
                     maxLines = 5
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
                     onClick = {
@@ -522,6 +532,8 @@ fun RouteScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = "Back to Active Session", fontSize = 16.sp)
                 }
+                
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     )

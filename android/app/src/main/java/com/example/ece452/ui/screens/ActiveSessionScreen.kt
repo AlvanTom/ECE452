@@ -133,12 +133,12 @@ fun ActiveSessionScreen(
                         },
                         shape = RoundedCornerShape(50),
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
                         enabled = !isEndingSession
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add a new route")
+                        Icon(Icons.Default.Add, contentDescription = "Add a new route", tint = MaterialTheme.colorScheme.onSecondaryContainer)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add a new route")
+                        Text("Add a new route", color = MaterialTheme.colorScheme.onSecondaryContainer)
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))

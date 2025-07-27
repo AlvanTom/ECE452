@@ -1,5 +1,6 @@
 package com.example.ece452.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -11,9 +12,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ece452.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,12 +48,12 @@ fun TopBar(
                     Icon(Icons.Default.Menu, contentDescription = "Menu")
                 }
                 Spacer(Modifier.weight(1f))
-                Text(
-                    text = title,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4B6536),
-                    modifier = Modifier.align(Alignment.CenterVertically)
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Climbr Logo",
+                    modifier = Modifier
+                        .height(32.dp)
+                        .align(Alignment.CenterVertically)
                 )
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = onProfileClick) {
