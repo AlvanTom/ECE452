@@ -6,12 +6,12 @@ const db = admin.firestore();
 
 export const createPost = functions.https.onCall(async (request) => {
   // Check if user is authenticated
-//   if (!request.auth) {
-//     throw new functions.https.HttpsError(
-//       "unauthenticated",
-//       "User must be logged in to post"
-//     );
-//   }
+  if (!request.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be logged in to post"
+    );
+  }
 
   const {
     uid,
@@ -59,12 +59,12 @@ export const createPost = functions.https.onCall(async (request) => {
 });
 
 export const addComment = functions.https.onCall(async (request) => {
-    // if (!request.auth) {
-    //   throw new functions.https.HttpsError(
-    //     "unauthenticated",
-    //     "You must be logged in to comment"
-    //   );
-    // }
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "You must be logged in to comment"
+      );
+    }
   
     const {
       postId,
@@ -112,13 +112,13 @@ export const addComment = functions.https.onCall(async (request) => {
   
 // true to like, false to unlike
 export const toggleLike = functions.https.onCall(async (request) => {
-    // Auth check (optional for prod)
-    // if (!request.auth) {
-    //   throw new functions.https.HttpsError(
-    //     "unauthenticated",
-    //     "You must be logged in to like a post"
-    //   );
-    // }
+    // Auth check 
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "You must be logged in to like a post"
+      );
+    }
   
     const {
       postId,
@@ -157,12 +157,12 @@ export const toggleLike = functions.https.onCall(async (request) => {
 // Returns all verified posts in the database
 export const getFeed = functions.https.onCall(async (request) => {
     // Auth check commented for testing
-    // if (!request.auth) {
-    //   throw new functions.https.HttpsError(
-    //     "unauthenticated",
-    //     "User must be logged in"
-    //   );
-    // }
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in"
+      );
+    }
   
     const userId = "9R0NeLXu6fY7ziTyQH7Cw6UhWPh1";
     const userRef = db.collection("users").doc(userId);
