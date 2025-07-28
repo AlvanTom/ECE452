@@ -41,7 +41,7 @@ fun FeedScreen(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(feedPosts) { post ->
+            items(feedPosts.asReversed()) { post ->
                 PostCard(
                     post = post,
                     onLikeClick = {
