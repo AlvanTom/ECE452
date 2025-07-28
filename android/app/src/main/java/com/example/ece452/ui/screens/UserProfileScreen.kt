@@ -84,7 +84,6 @@ fun UserProfileScreen(
 
     var postCount by remember { mutableStateOf(0) }
     var sessionCount by remember { mutableStateOf(0) }
-    var uniqueClimbDays by remember { mutableStateOf(0) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -184,19 +183,6 @@ fun UserProfileScreen(
                 .get()
                 .addOnSuccessListener { documents ->
                     sessionCount = documents.size()
-
-                    val now = System.currentTimeMillis()
-                    val sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000L
-                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-                    val uniqueDays = documents.mapNotNull { doc ->
-                        val timestamp = doc.getTimestamp("date")?.toDate()?.time
-                        if (timestamp != null && timestamp >= sevenDaysAgo) {
-                            sdf.format(timestamp)
-                        } else null
-                    }.toSet()
-
-                    uniqueClimbDays = uniqueDays.size
                 }
         }
     }
@@ -397,7 +383,6 @@ fun UserProfileScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(text = "Climbing Stats", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Days climbed (last 7d): $uniqueClimbDays")
                     Text("Number of posts: $postCount")
                     Text("Number of sessions: $sessionCount")
                 }
