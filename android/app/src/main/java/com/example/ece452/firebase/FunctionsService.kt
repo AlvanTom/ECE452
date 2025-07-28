@@ -4,6 +4,7 @@ import com.google.firebase.functions.FirebaseFunctions
 import com.example.ece452.data.Session
 import com.example.ece452.data.Route
 import com.example.ece452.data.Attempt
+import com.example.ece452.data.Post
 import kotlinx.coroutines.tasks.await
 
 data class SessionCreationResult(
@@ -249,4 +250,35 @@ class FunctionsService {
             }
         )
     }
+
+    suspend fun createPost(post: Post): Result<String> {
+        val data = buildMap<String, Any> {
+            put("uid", post.userId)
+            put("username", post.username)
+            post.userProfileImage?.let { put("userProfileImage", it) }
+            put("title", post.title)
+            put("location", post.location)
+            put("date", post.date)
+            put("vScale", post.vScale)
+            put("isIndoor", post.isIndoor)
+            put("notes", post.notes)
+            put("description", post.description)
+            put("mediaUrls", post.mediaUrls)
+        }
+
+        return callFunction("createPost", data).fold(
+            onSuccess = { responseData ->
+                val postId = responseData?.get("postId") as? String
+                if (postId != null) {
+                    Result.success(postId)
+                } else {
+                    Result.failure(Exception("Invalid response: missing postId"))
+                }
+            },
+            onFailure = { exception ->
+                Result.failure(exception)
+            }
+        )
+    }
+
 } 
