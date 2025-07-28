@@ -5,7 +5,6 @@ import * as admin from "firebase-admin";
 const db = admin.firestore();
 
 export const createPost = functions.https.onCall(async (request) => {
-  // Check if user is authenticated
   if (!request.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
@@ -33,31 +32,28 @@ export const createPost = functions.https.onCall(async (request) => {
     mediaUrls?: string[];
   } = request.data;
 
-  console.log("Parsed data:", {
-    uid,
-    title,
-    location,
-    isIndoor,
-    date,
-    vScale,
-    notes,
-    mediaUrls,
-  });
-
-  if (!uid || !title || !location || typeof isIndoor !== "boolean") {
+  // Fetch displayName and profilePhotoUrl from users collection
+  const userRef = admin.firestore().collection("users").doc(uid);
+  const userDoc = await userRef.get();
+  if (!userDoc.exists) {
     throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Missing/Invalid fields: (uid, title, location, isIndoor)"
+      "not-found",
+      "User profile not found"
     );
   }
+  const userData = userDoc.data();
+  const username = userData?.displayName || "Unknown";
+  const userProfileImage = userData?.profilePhotoUrl || null;
 
   const postDoc = {
     userId: uid,
+    username, // Store display name in post
+    userProfileImage, // Store profile photo URL in post
     title,
     location,
     isIndoor,
     date,
-    difficulty: vScale, // Store as difficulty in database
+    difficulty: vScale,
     notes,
     mediaUrls: mediaUrls || [],
     likes: 0,
@@ -67,58 +63,6 @@ export const createPost = functions.https.onCall(async (request) => {
   const postRef = await db.collection("posts").add(postDoc);
 
   return { postId: postRef.id };
-});
-
-export const addComment = functions.https.onCall(async (request) => {
-  if (!request.auth) {
-    throw new functions.https.HttpsError(
-      "unauthenticated",
-      "You must be logged in to comment"
-    );
-  }
-
-  const {
-    postId,
-    content,
-    username,
-    userProfileImage,
-  }: {
-    postId: string;
-    content: string;
-    username: string;
-    userProfileImage?: string;
-  } = request.data;
-
-  // const userId = request.auth.uid;
-
-  if (!postId || !content || !username) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Missing required fields (postId, content, username)"
-    );
-  }
-
-  const userId = "test-user-123"; // ← hardcoded for local testing
-
-  const commentRef = db
-    .collection("posts")
-    .doc(postId)
-    .collection("comments")
-    .doc();
-
-  const commentDoc = {
-    id: commentRef.id,
-    postId,
-    userId,
-    username,
-    userProfileImage: userProfileImage || null,
-    content,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-
-  await commentRef.set(commentDoc);
-
-  return { success: true, commentId: commentRef.id };
 });
 
 // true to like, false to unlike

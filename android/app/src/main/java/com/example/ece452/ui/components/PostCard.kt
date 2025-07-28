@@ -83,7 +83,7 @@ fun PostCard(
                 
                 // Username
                 Text(
-                    text = post.username,
+                    text = "fiontest",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Medium
                     ),
@@ -93,6 +93,18 @@ fun PostCard(
             
             Spacer(modifier = Modifier.height(12.dp))
             
+            // Title
+            if (post.title.isNotBlank()) {
+                Text(
+                    text = post.title,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
             // Media content
             if (post.mediaUrls.isNotEmpty()) {
                 Card(
@@ -172,7 +184,7 @@ fun PostCard(
             
             // Post description
             Text(
-                text = post.description,
+                text = post.notes,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 3,

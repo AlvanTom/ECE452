@@ -53,4 +53,4 @@ export {
   putSession,
   updateRouteMedia,
 } from "./session";
-export { createPost, getFeed, addComment, toggleLike } from "./post";
+export { createPost, getFeed, toggleLike } from "./post";
