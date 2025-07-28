@@ -58,6 +58,7 @@ export const createSession = functions.https.onCall(async (request) => {
   };
 
   const sessionRef = await db.collection("sessions").add(sessionDoc);
+  const routeIds: string[] = [];
 
   for (const route of routes) {
     if (
@@ -79,7 +80,10 @@ export const createSession = functions.https.onCall(async (request) => {
       difficulty,
       tags,
       notes: notes ?? null,
+      mediaUrl: null, // Will be updated later with actual media URL
     });
+
+    routeIds.push(routeRef.id);
 
     for (const attempt of attempts) {
       if (typeof attempt.success !== "boolean" || !attempt.createdAt) {
@@ -95,7 +99,7 @@ export const createSession = functions.https.onCall(async (request) => {
     }
   }
 
-  return { sessionId: sessionRef.id };
+  return { sessionId: sessionRef.id, routeIds };
 });
 
 export const getSessionByID = functions.https.onCall(async (request) => {
@@ -201,6 +205,7 @@ export const putSession = functions.https.onCall(async (request) => {
       tags: string[];
       notes?: string;
       attempts: { success: boolean; createdAt: string }[];
+      mediaUrl?: string;
     }[];
   } = request.data;
 
@@ -225,24 +230,36 @@ export const putSession = functions.https.onCall(async (request) => {
   if (Object.keys(updatePayload).length > 0) {
     await sessionRef.update(updatePayload);
   }
+  let routeIds: string[] = [];
+
   if (Array.isArray(routes)) {
     const routesRef = sessionRef.collection("routes");
     const existingRoutes = await routesRef.listDocuments();
 
     // Delete old routes (and their attempts)
-    await Promise.all(existingRoutes.map(async (routeDoc) => {
-      const attemptsRef = routeDoc.collection("attempts");
-      const attemptsDocs = await attemptsRef.listDocuments();
-      await Promise.all(attemptsDocs.map((doc) => doc.delete()));
-      await routeDoc.delete();
-    }));
+    await Promise.all(
+      existingRoutes.map(async (routeDoc) => {
+        const attemptsRef = routeDoc.collection("attempts");
+        const attemptsDocs = await attemptsRef.listDocuments();
+        await Promise.all(attemptsDocs.map((doc) => doc.delete()));
+        await routeDoc.delete();
+      })
+    );
 
     // Add new routes
     for (const route of routes) {
-      const { routeName, difficulty, tags, notes, attempts } = route;
+      const { routeName, difficulty, tags, notes, attempts, mediaUrl } = route;
 
-      if (!routeName || !difficulty || !Array.isArray(tags) || !Array.isArray(attempts)) {
-        throw new functions.https.HttpsError("invalid-argument", "Invalid route structure");
+      if (
+        !routeName ||
+        !difficulty ||
+        !Array.isArray(tags) ||
+        !Array.isArray(attempts)
+      ) {
+        throw new functions.https.HttpsError(
+          "invalid-argument",
+          "Invalid route structure"
+        );
       }
 
       const routeRef = await routesRef.add({
@@ -250,11 +267,17 @@ export const putSession = functions.https.onCall(async (request) => {
         difficulty,
         tags,
         notes: notes ?? null,
+        mediaUrl: mediaUrl ?? null, // Preserve existing media URL or set to null
       });
+
+      routeIds.push(routeRef.id);
 
       for (const attempt of attempts) {
         if (typeof attempt.success !== "boolean" || !attempt.createdAt) {
-          throw new functions.https.HttpsError("invalid-argument", "Invalid attempt structure");
+          throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Invalid attempt structure"
+          );
         }
 
         await routeRef.collection("attempts").add({
@@ -265,5 +288,46 @@ export const putSession = functions.https.onCall(async (request) => {
     }
   }
 
-  return { sessionId };
+  return { sessionId, routeIds };
+});
+
+export const updateRouteMedia = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be logged in"
+    );
+  }
+
+  const {
+    sessionId,
+    routeId,
+    mediaUrl,
+  }: {
+    sessionId: string;
+    routeId: string;
+    mediaUrl: string;
+  } = request.data;
+
+  if (!sessionId || !routeId || !mediaUrl) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Session ID, Route ID, and Media URL are required"
+    );
+  }
+
+  const routeRef = db
+    .collection("sessions")
+    .doc(sessionId)
+    .collection("routes")
+    .doc(routeId);
+
+  const routeDoc = await routeRef.get();
+  if (!routeDoc.exists) {
+    throw new functions.https.HttpsError("not-found", "Route not found");
+  }
+
+  await routeRef.update({ mediaUrl });
+
+  return { success: true };
 });

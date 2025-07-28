@@ -7,6 +7,12 @@ import com.example.ece452.data.Route
 import com.example.ece452.data.Session
 import com.example.ece452.firebase.AuthService
 import com.example.ece452.firebase.FunctionsService
+import com.example.ece452.firebase.SessionCreationResult
+import com.example.ece452.firebase.FirebaseConfig
+import android.net.Uri
+import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.StorageMetadata
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,11 +126,39 @@ class SessionViewModel : ViewModel() {
             val result = if (session.id.isNotEmpty()) {
                 // Session already exists in backend, update it
                 println("Updating existing session with ID: ${session.id}")
-                functionsService.updateSession(session)
+                val updateResult = functionsService.updateSession(session)
+                when {
+                    updateResult.isSuccess -> {
+                        val creationResult = updateResult.getOrThrow()
+                        println("Session updated successfully with ID: ${creationResult.sessionId}")
+                        
+                        // Upload media for routes that have local URIs
+                        println("Starting media upload for ${creationResult.routeIds.size} updated routes...")
+                        uploadRouteMedia(creationResult.sessionId, creationResult.routeIds, session.routes)
+                        println("Media upload completed for updated session")
+                        
+                        Result.success(creationResult.sessionId)
+                    }
+                    else -> updateResult.map { it.sessionId }
+                }
             } else {
                 // New session, create it
                 println("Creating new session")
-                functionsService.createSession(session)
+                val createResult = functionsService.createSession(session)
+                when {
+                    createResult.isSuccess -> {
+                        val creationResult = createResult.getOrThrow()
+                        println("Session created successfully with ID: ${creationResult.sessionId}")
+                        
+                        // Upload media for routes that have local URIs
+                        println("Starting media upload for ${creationResult.routeIds.size} routes...")
+                        uploadRouteMedia(creationResult.sessionId, creationResult.routeIds, session.routes)
+                        println("Media upload completed")
+                        
+                        Result.success(creationResult.sessionId)
+                    }
+                    else -> createResult.map { it.sessionId }
+                }
             }
             
             result.fold(
@@ -307,13 +341,19 @@ class SessionViewModel : ViewModel() {
     suspend fun updateSession(session: Session): Result<String> {
         val result = functionsService.updateSession(session)
         
-        // If update was successful, update the session in local history
+        // If update was successful, handle media upload and update local history
         result.fold(
-            onSuccess = { sessionId ->
+            onSuccess = { creationResult ->
+                // Upload media for routes that have local URIs
+                println("Starting media upload for ${creationResult.routeIds.size} routes in updateSession...")
+                uploadRouteMedia(creationResult.sessionId, creationResult.routeIds, session.routes)
+                println("Media upload completed in updateSession")
+                
+                // Update local session history
                 _sessionHistory.update { currentHistory ->
                     currentHistory.map { existingSession ->
                         if (existingSession.id == session.id) {
-                            session.copy(id = sessionId) // Ensure we have the correct ID
+                            session.copy(id = creationResult.sessionId) // Ensure we have the correct ID
                         } else {
                             existingSession
                         }
@@ -323,6 +363,62 @@ class SessionViewModel : ViewModel() {
             onFailure = { /* Keep existing history on failure */ }
         )
         
-        return result
+        return result.map { it.sessionId }
+    }
+
+    private suspend fun uploadRouteMedia(sessionId: String, routeIds: List<String>, routes: List<Route>) {
+        val storage = FirebaseConfig.storage
+        val userId = authService.getCurrentUserId() ?: return
+
+        println("uploadRouteMedia called with ${routes.size} routes and ${routeIds.size} routeIds")
+        
+        for ((index, route) in routes.withIndex()) {
+            val routeId = routeIds.getOrNull(index) ?: continue
+            val mediaUri = route.mediaUri
+            
+            println("Route $index (${route.routeName}): routeId=$routeId, mediaUri=$mediaUri")
+
+            if (mediaUri != null && !mediaUri.startsWith("http")) {
+                // This is a local URI, needs to be uploaded
+                try {
+                    val uri = Uri.parse(mediaUri)
+                    val fileName = "route_${sessionId}_${routeId}_${System.currentTimeMillis()}"
+                    val ref: StorageReference = storage.reference.child("route_media/$fileName")
+                    
+                    // Set metadata with userId for security rules
+                    val metadata = StorageMetadata.Builder()
+                        .setCustomMetadata("userId", userId)
+                        .build()
+                    
+                    val uploadTask = ref.putFile(uri, metadata).await()
+                    val downloadUrl = ref.downloadUrl.await().toString()
+                    
+                    // Update route with download URL
+                    val updateResult = functionsService.updateRouteMedia(sessionId, routeId, downloadUrl)
+                    updateResult.fold(
+                        onSuccess = { success ->
+                            if (success) {
+                                println("Successfully uploaded media for route $routeId: $downloadUrl")
+                            } else {
+                                println("Media uploaded but failed to update route $routeId in database")
+                            }
+                        },
+                        onFailure = { exception ->
+                            println("Failed to update route $routeId with media URL: ${exception.message}")
+                        }
+                    )
+                } catch (e: Exception) {
+                    println("Failed to upload media for route $routeId: ${e.message}")
+                    // Continue with other routes even if one fails
+                }
+            } else {
+                if (mediaUri == null) {
+                    println("Route $routeId has no media to upload")
+                } else {
+                    println("Route $routeId already has remote media URL: $mediaUri")
+                }
+            }
+        }
+        println("Media upload process completed for session $sessionId")
     }
 } 

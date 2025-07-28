@@ -20,7 +20,8 @@ data class Route(
     val difficulty: String = "",
     val tags: List<String> = emptyList(),
     val notes: String? = null,
-    val attempts: List<Attempt> = emptyList()
+    val attempts: List<Attempt> = emptyList(),
+    val mediaUri: String? = null // Local URI for unsaved routes, download URL for saved routes
 )
 
 data class Attempt(

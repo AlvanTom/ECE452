@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Rules for route media uploads
+    match /route_media/{fileName} {
+      // Allow authenticated users to read and write their own route media
+      allow read, write: if request.auth != null 
+        && (resource == null || resource.metadata.userId == request.auth.uid);
+    }
+    
+    // Rules for post media uploads (existing functionality)
+    match /post_media/{fileName} {
+      // Allow authenticated users to read and write their own post media
+      allow read, write: if request.auth != null 
+        && (resource == null || resource.metadata.userId == request.auth.uid);
+    }
+    
+    // Rules for profile photos (existing functionality)
+    match /profile_photos/{fileName} {
+      // Allow authenticated users to read and write their own profile photos
+      allow read, write: if request.auth != null 
+        && (resource == null || resource.metadata.userId == request.auth.uid);
+    }
+  }
+} 
