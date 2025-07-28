@@ -281,4 +281,49 @@ class FunctionsService {
         )
     }
 
+    suspend fun getFeed(): Result<List<Post>> {
+        return callFunction("getFeed").fold(
+            onSuccess = { responseData ->
+                val rawPosts = responseData?.get("posts") as? List<*>
+                if (rawPosts != null) {
+                    val posts = rawPosts.mapNotNull { raw ->
+                        try {
+                            @Suppress("UNCHECKED_CAST")
+                            mapToPost(raw as Map<*, *>)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    Result.success(posts)
+                } else {
+                    Result.failure(Exception("Invalid response: missing posts"))
+                }
+            },
+            onFailure = { exception ->
+                Result.failure(exception)
+            }
+        )
+    }
+
+    private fun mapToPost(data: Map<*, *>): Post {
+        return Post(
+            id = data["id"] as? String ?: "",
+            userId = data["userId"] as? String ?: "",
+            username = data["username"] as? String ?: "",
+            userProfileImage = data["userProfileImage"] as? String,
+            title = data["title"] as? String ?: "",
+            location = data["location"] as? String ?: "",
+            date = data["date"] as? String ?: "",
+            timestamp = (data["createdAt"] as? Long) ?: System.currentTimeMillis(),
+            vScale = (data["vScale"] as? Long)?.toInt() ?: 0,
+            isIndoor = data["isIndoor"] as? Boolean ?: true,
+            notes = data["notes"] as? String ?: "",
+            description = data["description"] as? String ?: "",
+            mediaUrls = (data["mediaUrls"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            likes = (data["likes"] as? Long)?.toInt() ?: 0,
+            comments = (data["comments"] as? Long)?.toInt() ?: 0,
+            isLikedByCurrentUser = false // client-side only
+        )
+    }
+
 } 

@@ -65,7 +65,7 @@ fun FeedScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Button(
-                            onClick = { postViewModel.loadMorePosts() },
+                            onClick = { postViewModel.loadFeed() },
                             enabled = !isLoading,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
