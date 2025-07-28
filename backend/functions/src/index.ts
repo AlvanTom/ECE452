@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { addComment, toggleLike } from "./post";
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -45,6 +46,12 @@ export const getUsers = functions.https.onCall(
   }
 );
 
-export { createUser } from "./user";
-export { createSession, getSessionByID, getSessionsByUID, putSession } from "./session";
+export { createUser, updateUser } from "./user";
+export {
+  createSession,
+  getSessionByID,
+  getSessionsByUID,
+  putSession,
+  updateRouteMedia,
+} from "./session";
 export { createPost, getFeed, addComment, toggleLike } from "./post";

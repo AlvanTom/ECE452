@@ -12,7 +12,13 @@ export const createUser = functions.https.onCall(async (request) => {
     );
   }
 
-  const { displayName }: { displayName: string } = request.data;
+  const {
+    displayName,
+    profilePhotoUrl,
+  }: {
+    displayName: string;
+    profilePhotoUrl?: string;
+  } = request.data;
   const userId = request.auth.uid;
   const email = request.auth.token.email;
 
@@ -31,6 +37,7 @@ export const createUser = functions.https.onCall(async (request) => {
     const userData = {
       displayName: displayName,
       email: email,
+      profilePhotoUrl: profilePhotoUrl ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -47,5 +54,61 @@ export const createUser = functions.https.onCall(async (request) => {
   } catch (error) {
     console.error("Error creating user:", error);
     throw new functions.https.HttpsError("internal", "Failed to create user");
+  }
+});
+
+export const updateUser = functions.https.onCall(async (request) => {
+  // Check if the user is authenticated
+  if (!request.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be authenticated to update profile"
+    );
+  }
+
+  const {
+    displayName,
+    profilePhotoUrl,
+  }: {
+    displayName?: string;
+    profilePhotoUrl?: string;
+  } = request.data;
+
+  const userId = request.auth.uid;
+
+  if (!displayName && !profilePhotoUrl) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "At least one field (displayName or profilePhotoUrl) is required"
+    );
+  }
+
+  try {
+    const updateData: any = {
+      updatedAt: admin.firestore.Timestamp.now(),
+    };
+
+    if (displayName) {
+      updateData.displayName = displayName;
+    }
+
+    if (profilePhotoUrl) {
+      updateData.profilePhotoUrl = profilePhotoUrl;
+    }
+
+    // Update user document in Firestore
+    await db.collection("users").doc(userId).update(updateData);
+
+    return {
+      success: true,
+      message: "User profile updated successfully",
+      userId: userId,
+    };
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Failed to update user profile"
+    );
   }
 });

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -67,7 +68,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.Delete
+import com.example.ece452.ui.components.MediaViewer
 
 @Composable
 fun RouteScreen(
@@ -86,6 +89,9 @@ fun RouteScreen(
     val scrollState = rememberScrollState()
     val isUpdateMode = routeIdx != null
 
+    val context = LocalContext.current
+    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
     LaunchedEffect(existingRoute) {
         if (isUpdateMode && existingRoute != null) {
             routeName = existingRoute.routeName
@@ -93,16 +99,16 @@ fun RouteScreen(
             notes = existingRoute.notes ?: ""
             tags = existingRoute.tags
             attempts = existingRoute.attempts
+            // Initialize selected media from existing route if available
+            selectedMediaUris = existingRoute.mediaUri?.let { listOf(Uri.parse(it)) } ?: emptyList()
         }
     }
-
-    val context = LocalContext.current
-    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var showMediaSourceDialog by remember { mutableStateOf(false) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var cameraVideoUri by remember { mutableStateOf<Uri?>(null) }
     var pendingCameraAction by remember { mutableStateOf<String?>(null) }
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var showMediaViewer by remember { mutableStateOf<String?>(null) } // mediaUri to show in viewer
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -136,8 +142,8 @@ fun RouteScreen(
         pendingCameraAction = null
         pendingCameraUri = null
     }
-    fun isVideoFile(uri: Uri): Boolean {
-        val path = uri.toString().lowercase()
+    fun isVideoFile(uri: String): Boolean {
+        val path = uri.lowercase()
         return path.endsWith(".mp4") || path.endsWith(".3gp") || path.endsWith(".mkv") || path.contains("video")
     }
     @Composable
@@ -292,7 +298,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = attempts // keep attempts
+                                attempts = attempts, // keep attempts
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString() ?: existingRoute.mediaUri
                             )
                             if (updatedRoute != null) {
                                 sessionViewModel.updateRoute(routeIdx, updatedRoute)
@@ -305,7 +312,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = emptyList<Attempt>()
+                                attempts = emptyList<Attempt>(),
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString()
                             )
                             sessionViewModel.addRouteToActiveSession(newRoute)
                             navController.navigate(Routes.Attempt.name)
@@ -330,6 +338,145 @@ fun RouteScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // --- MEDIA UPLOAD UI ---
+                
+                // Show existing media from backend if available (and no new media selected)
+                if (selectedMediaUris.isEmpty() && existingRoute?.mediaUri != null) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Existing Media:",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        if (isVideoFile(existingRoute.mediaUri)) {
+                            // Show video placeholder with play button
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.Black)
+                                    .clickable { showMediaViewer = existingRoute.mediaUri }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Videocam,
+                                    contentDescription = "Video",
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(48.dp),
+                                    tint = Color.White
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Play",
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .size(36.dp)
+                                        .drawBehind {
+                                            drawCircle(
+                                                color = Color.Black.copy(alpha = 0.5f),
+                                                radius = size.minDimension / 2
+                                            )
+                                        }
+                                )
+                            }
+                        } else {
+                            // Show image
+                            AsyncImage(
+                                model = existingRoute.mediaUri,
+                                contentDescription = "Route media",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showMediaViewer = existingRoute.mediaUri },
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+                
+                // Show new media if selected
+                selectedMediaUris.firstOrNull()?.let { mediaUri ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "New Media:",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        if (isVideoFile(mediaUri.toString())) {
+                            // Show video thumbnail
+                            val thumbnail = rememberVideoThumbnail(context = context, uri = mediaUri)
+                            if (thumbnail != null) {
+                                Image(
+                                    bitmap = thumbnail.asImageBitmap(),
+                                    contentDescription = "Video thumbnail",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.Black)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Videocam,
+                                        contentDescription = "Video",
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(48.dp),
+                                        tint = Color.White
+                                    )
+                                }
+                            }
+                            // Play button overlay
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Play",
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .drawBehind {
+                                            drawCircle(
+                                                color = Color.Black.copy(alpha = 0.5f),
+                                                radius = size.minDimension / 2
+                                            )
+                                        }
+                                )
+                            }
+                        } else {
+                            // Show image
+                            AsyncImage(
+                                model = mediaUri,
+                                contentDescription = "Route media",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+                
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = {
@@ -417,8 +564,8 @@ fun RouteScreen(
                                     .size(80.dp)
                                     .padding(4.dp)
                             ) {
-                                if (isVideoFile(uri)) {
-                                    val thumbnail = rememberVideoThumbnail(context, uri)
+                                if (isVideoFile(uri.toString())) {
+                                    val thumbnail = rememberVideoThumbnail(context = context, uri = uri)
                                     if (thumbnail != null) {
                                         Image(
                                             bitmap = thumbnail.asImageBitmap(),
@@ -481,7 +628,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = attempts
+                                attempts = attempts,
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString() ?: existingRoute.mediaUri
                             )
                             if (updatedRoute != null) {
                                 sessionViewModel.updateRoute(routeIdx, updatedRoute)
@@ -494,7 +642,8 @@ fun RouteScreen(
                                 difficulty = "V${vScale.toInt()}",
                                 notes = notes,
                                 tags = tags,
-                                attempts = emptyList<Attempt>()
+                                attempts = emptyList<Attempt>(),
+                                mediaUri = selectedMediaUris.firstOrNull()?.toString()
                             )
                             sessionViewModel.addRouteToActiveSession(newRoute)
                             navController.popBackStack()
@@ -534,6 +683,14 @@ fun RouteScreen(
                 }
                 
                 Spacer(modifier = Modifier.height(20.dp))
+                
+                // Media viewer
+                showMediaViewer?.let { mediaUri ->
+                    MediaViewer(
+                        mediaUri = mediaUri,
+                        onDismiss = { showMediaViewer = null }
+                    )
+                }
             }
         }
     )

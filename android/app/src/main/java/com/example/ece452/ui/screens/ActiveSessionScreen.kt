@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import com.example.ece452.data.Attempt
 import com.example.ece452.data.Route
 import com.example.ece452.navigation.Routes
@@ -27,11 +32,24 @@ import com.example.ece452.ui.theme.*
 import com.example.ece452.ui.viewmodels.SessionViewModel
 import kotlinx.coroutines.launch
 import com.example.ece452.ui.components.AttemptEditModal
+import com.example.ece452.ui.components.MediaViewer
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Videocam
 import com.example.ece452.data.Session
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
+import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.drawBehind
+
+// Helper function to check if a URI is a video file
+fun isVideoFile(uri: String): Boolean {
+    val path = uri.lowercase()
+    return path.endsWith(".mp4") || path.endsWith(".3gp") || path.endsWith(".mkv") || path.contains("video")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +64,7 @@ fun ActiveSessionScreen(
     var showSheet by remember { mutableStateOf(false) }
     var selectedAttempt: Triple<Int, Int, Attempt>? by remember { mutableStateOf(null) } // routeIdx, attemptIdx, attempt
     var editSuccess by remember { mutableStateOf<Boolean?>(null) }
+    var showMediaViewer by remember { mutableStateOf<String?>(null) } // mediaUri to show in viewer
     val scope = rememberCoroutineScope()
     Scaffold { innerPadding ->
         Box(
@@ -118,6 +137,9 @@ fun ActiveSessionScreen(
                                     },
                                     onEditClick = {
                                         navController.navigate("${Routes.Route.name}/$routeIdx")
+                                    },
+                                    onMediaClick = { mediaUri ->
+                                        showMediaViewer = mediaUri
                                     }
                                 )
                                 Divider()
@@ -198,13 +220,28 @@ fun ActiveSessionScreen(
                     },
                     onDismiss = { showSheet = false }
                 )
+                
+                // Media viewer
+                showMediaViewer?.let { mediaUri ->
+                    MediaViewer(
+                        mediaUri = mediaUri,
+                        onDismiss = { showMediaViewer = null }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun RouteListItem(route: Route, isExpanded: Boolean, onClick: () -> Unit, onAttemptClick: (Int, Attempt) -> Unit, onEditClick: () -> Unit) {
+fun RouteListItem(
+    route: Route, 
+    isExpanded: Boolean, 
+    onClick: () -> Unit, 
+    onAttemptClick: (Int, Attempt) -> Unit, 
+    onEditClick: () -> Unit,
+    onMediaClick: (String) -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -236,6 +273,64 @@ fun RouteListItem(route: Route, isExpanded: Boolean, onClick: () -> Unit, onAtte
             }
         }
         if (isExpanded) {
+            // Show media if available
+            route.mediaUri?.let { mediaUri ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .clickable { onMediaClick(mediaUri) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isVideoFile(mediaUri)) {
+                        // Show video thumbnail with play button
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black)
+                        ) {
+                            // Video thumbnail would go here - for now show video icon
+                            Icon(
+                                imageVector = Icons.Default.Videocam,
+                                contentDescription = "Video",
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(48.dp),
+                                tint = Color.White
+                            )
+                            // Play button overlay
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .size(36.dp)
+                                    .drawBehind {
+                                        drawCircle(
+                                            color = Color.Black.copy(alpha = 0.5f),
+                                            radius = size.minDimension / 2
+                                        )
+                                    }
+                            )
+                        }
+                    } else {
+                        // Show image
+                        AsyncImage(
+                            model = mediaUri,
+                            contentDescription = "Route media",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+            
             route.attempts.forEachIndexed { idx, attempt ->
                 AttemptListItem(attempt, idx) { onAttemptClick(idx, attempt) }
             }

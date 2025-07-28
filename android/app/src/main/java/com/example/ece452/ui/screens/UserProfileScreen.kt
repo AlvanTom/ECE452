@@ -50,6 +50,7 @@ import java.io.File
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ece452.ui.viewmodels.UserProfileViewModel
+import com.example.ece452.firebase.FunctionsService
 
 @Composable
 fun UserProfileScreen(
@@ -124,27 +125,44 @@ fun UserProfileScreen(
                 val storage = FirebaseConfig.storage
                 val fileName = "profile_photo_${userId}_${System.currentTimeMillis()}.jpg"
                 val ref: StorageReference = storage.reference.child("profile_photos/$fileName")
-                val uploadTask = ref.putFile(uri).await()
+                
+                // Set metadata with userId for security rules
+                val metadata = com.google.firebase.storage.StorageMetadata.Builder()
+                    .setCustomMetadata("userId", userId)
+                    .build()
+                
+                val uploadTask = ref.putFile(uri, metadata).await()
                 val downloadUrl = ref.downloadUrl.await().toString()
                 
-                // Update user profile with photo URL
+                // Update user profile in Firebase Auth
                 val currentUser = Firebase.auth.currentUser
                 currentUser?.let {
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setPhotoUri(Uri.parse(downloadUrl))
                         .build()
-                    it.updateProfile(profileUpdates)
-                        .addOnSuccessListener {
-                            feedback = "Profile photo updated successfully!"
-                            isUploadingPhoto = false
-                            // Refresh the profile photo in the ViewModel
-                            viewModel.refreshProfilePhoto()
-                        }
-                        .addOnFailureListener { e ->
-                            feedback = "Failed to update profile photo: ${e.message}"
-                            isUploadingPhoto = false
-                        }
+                    it.updateProfile(profileUpdates).await()
                 }
+                
+                // Update user profile in Firestore via backend function
+                val functionsService = FunctionsService()
+                val updateResult = functionsService.updateUser(profilePhotoUrl = downloadUrl)
+                
+                updateResult.fold(
+                    onSuccess = { success ->
+                        if (success) {
+                            feedback = "Profile photo updated successfully!"
+                            selectedProfilePhotoUri = null // Clear selection
+                            viewModel.updateProfilePhoto(downloadUrl) // Update ViewModel
+                        } else {
+                            feedback = "Failed to update profile in database"
+                        }
+                    },
+                    onFailure = { exception ->
+                        feedback = "Failed to update profile: ${exception.message}"
+                    }
+                )
+                
+                isUploadingPhoto = false
             } catch (e: Exception) {
                 feedback = "Failed to upload photo: ${e.message}"
                 isUploadingPhoto = false
