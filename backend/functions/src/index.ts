@@ -1,6 +1,5 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { addComment, toggleLike } from "./post";
 
 // Initialize Firebase Admin
 admin.initializeApp();
