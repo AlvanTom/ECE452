@@ -20,6 +20,8 @@ import com.google.firebase.storage.StorageMetadata
 
 class PostViewModel : ViewModel() {
 
+    private val functionsService = com.example.ece452.firebase.FunctionsService()
+
     private val _activePost = MutableStateFlow<Post?>(null)
     val activePost: StateFlow<Post?> = _activePost.asStateFlow()
 
@@ -43,7 +45,7 @@ class PostViewModel : ViewModel() {
     private val allMockPosts = generateMockPosts()
 
     init {
-        loadMorePosts()
+        loadFeed()
     }
 
     suspend fun uploadMediaFiles(uris: List<Uri>, userId: String): List<String> {
@@ -133,29 +135,27 @@ class PostViewModel : ViewModel() {
         _activePost.value = null
     }
 
-    fun loadMorePosts() {
-        if (_isLoading.value || !_hasMorePosts.value) return
-        
-        _isLoading.value = true
-        
-        viewModelScope.launch {
-            delay(500) // Simulate loading time
-            
-            val startIndex = currentPage * postsPerPage
-            val endIndex = minOf(startIndex + postsPerPage, allMockPosts.size)
-            
-            if (startIndex < allMockPosts.size) {
-                val newPosts = allMockPosts.subList(startIndex, endIndex)
-                _feedPosts.update { currentPosts ->
-                    currentPosts + newPosts
-                }
-                currentPage++
+    fun loadFeed() {
+    if (_isLoading.value) return
+
+    _isLoading.value = true
+    viewModelScope.launch {
+        val result = functionsService.getFeed()
+        _isLoading.value = false
+
+        result.fold(
+            onSuccess = { posts ->
+                _feedPosts.value = posts
+                _hasMorePosts.value = false // optional, or implement pagination logic later
+            },
+            onFailure = { e ->
+                e.printStackTrace()
+                // handle error (e.g., show toast/snackbar)
             }
-            
-            _hasMorePosts.value = endIndex < allMockPosts.size
-            _isLoading.value = false
-        }
+        )
     }
+}
+
 
     fun toggleLike(postId: String) {
         _feedPosts.update { posts ->

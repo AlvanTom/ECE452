@@ -41,7 +41,7 @@ fun FeedScreen(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(feedPosts) { post ->
+            items(feedPosts.asReversed()) { post ->
                 PostCard(
                     post = post,
                     onLikeClick = {
@@ -65,7 +65,7 @@ fun FeedScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Button(
-                            onClick = { postViewModel.loadMorePosts() },
+                            onClick = { postViewModel.loadFeed() },
                             enabled = !isLoading,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
