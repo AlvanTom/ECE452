@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { addComment, toggleLike } from "./post";
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -53,4 +54,4 @@ export {
   putSession,
   updateRouteMedia,
 } from "./session";
-export { createPost, getFeed } from "./post";
+export { createPost, getFeed, addComment, toggleLike } from "./post";
