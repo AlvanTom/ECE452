@@ -48,11 +48,17 @@ import android.os.Environment
 import android.Manifest
 import java.io.File
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ece452.ui.viewmodels.UserProfileViewModel
 
 @Composable
-fun UserProfileScreen() {
+fun UserProfileScreen(
+    userProfileViewModel: UserProfileViewModel? = null
+) {
+    val viewModel = userProfileViewModel ?: viewModel<UserProfileViewModel>()
     val user = Firebase.auth.currentUser
     val scrollState = rememberScrollState()
+    val profilePhotoUrl by viewModel.profilePhotoUrl.collectAsState()
 
     val db = Firebase.firestore
     val uid = user?.uid
@@ -131,6 +137,8 @@ fun UserProfileScreen() {
                         .addOnSuccessListener {
                             feedback = "Profile photo updated successfully!"
                             isUploadingPhoto = false
+                            // Refresh the profile photo in the ViewModel
+                            viewModel.refreshProfilePhoto()
                         }
                         .addOnFailureListener { e ->
                             feedback = "Failed to update profile photo: ${e.message}"
@@ -175,6 +183,11 @@ fun UserProfileScreen() {
         }
     }
 
+    // Refresh profile photo when user changes
+    LaunchedEffect(user?.uid) {
+        viewModel.refreshProfilePhoto()
+    }
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -206,10 +219,10 @@ fun UserProfileScreen() {
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                } else if (user?.photoUrl != null) {
-                    // Show existing profile photo
+                } else if (profilePhotoUrl != null) {
+                    // Show existing profile photo from ViewModel
                     Image(
-                        painter = rememberAsyncImagePainter(user.photoUrl),
+                        painter = rememberAsyncImagePainter(profilePhotoUrl),
                         contentDescription = "Profile Photo",
                         modifier = Modifier
                             .size(100.dp)

@@ -47,11 +47,17 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.material.icons.filled.Delete
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostScreen(postViewModel: PostViewModel = viewModel()) {
+
+    // Check if user is verified
+    val currentUser = Firebase.auth.currentUser
+    val isVerifiedUser = currentUser?.email == "fiontest@gmail.com"
 
     // Currently no backend integration
     // Currently no media upload
@@ -141,20 +147,40 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
 
     Scaffold(
         content = { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .background(backgroundLight)
-                    .verticalScroll(scrollState)
-                    .padding(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "New Post",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
+            if (!isVerifiedUser) {
+                // Show verification message for non-verified users
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize()
+                        .background(backgroundLight)
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Become a verified user in order to post!",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            } else {
+                // Show normal post screen for verified users
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize()
+                        .background(backgroundLight)
+                        .verticalScroll(scrollState)
+                        .padding(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "New Post",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -476,6 +502,7 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                 }
             }
         }
+    }
     )
 
     if (showDatePicker.value) {
