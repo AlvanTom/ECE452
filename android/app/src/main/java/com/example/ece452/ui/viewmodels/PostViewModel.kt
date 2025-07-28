@@ -16,6 +16,7 @@ import android.net.Uri
 import com.example.ece452.firebase.FirebaseConfig
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.storage.StorageMetadata
 
 class PostViewModel : ViewModel() {
 
@@ -51,7 +52,13 @@ class PostViewModel : ViewModel() {
         for (uri in uris) {
             val fileName = "${userId}_${System.currentTimeMillis()}_${uri.lastPathSegment}"
             val ref: StorageReference = storage.reference.child("post_media/$fileName")
-            val uploadTask = ref.putFile(uri).await()
+            
+            // Set metadata with userId for security rules
+            val metadata = StorageMetadata.Builder()
+                .setCustomMetadata("userId", userId)
+                .build()
+            
+            val uploadTask = ref.putFile(uri, metadata).await()
             val url = ref.downloadUrl.await().toString()
             urls.add(url)
         }
