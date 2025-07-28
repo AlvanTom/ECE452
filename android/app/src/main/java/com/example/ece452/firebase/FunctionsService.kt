@@ -228,4 +228,25 @@ class FunctionsService {
             }
         )
     }
+
+    suspend fun updateUser(displayName: String? = null, profilePhotoUrl: String? = null): Result<Boolean> {
+        val data = buildMap<String, Any> {
+            displayName?.let { put("displayName", it) }
+            profilePhotoUrl?.let { put("profilePhotoUrl", it) }
+        }
+
+        if (data.isEmpty()) {
+            return Result.failure(Exception("At least one field must be provided"))
+        }
+
+        return callFunction("updateUser", data).fold(
+            onSuccess = { responseData ->
+                val success = responseData?.get("success") as? Boolean
+                Result.success(success ?: false)
+            },
+            onFailure = { exception ->
+                Result.failure(exception)
+            }
+        )
+    }
 } 
