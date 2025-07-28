@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ece452.ui.theme.*
+import com.example.ece452.data.Post
 import java.text.SimpleDateFormat
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -80,6 +82,7 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
     var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isUploading by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+    var showSuccessMessage by remember { mutableStateOf(false) }
     var showMediaSourceDialog by remember { mutableStateOf(false) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var cameraVideoUri by remember { mutableStateOf<Uri?>(null) }
@@ -455,6 +458,50 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                 if (uploadError != null) {
                     Text(uploadError!!, color = MaterialTheme.colorScheme.error)
                 }
+                if (showSuccessMessage) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = secondaryContainerLight
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Success",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Post created successfully!",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            IconButton(
+                                onClick = { showSuccessMessage = false }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Dismiss",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
                 if (isUploading) {
                     CircularProgressIndicator()
                 }
@@ -464,20 +511,52 @@ fun PostScreen(postViewModel: PostViewModel = viewModel()) {
                         uploadError = null
                         coroutineScope.launch {
                             try {
-                                val userId = "user" // TODO: Replace with actual user ID from auth
-                                val urls = postViewModel.uploadMediaFiles(selectedMediaUris, userId)
-                                postViewModel.createPost(
+                                val currentUser = Firebase.auth.currentUser
+                
+                                if (currentUser == null) {
+                                    uploadError = "You must be logged in to post."
+                                    isUploading = false
+                                    return@launch
+                                }
+                
+                                val userId = currentUser.uid
+                                val username = currentUser.displayName ?: "Anonymous"
+                                val userProfileImage = currentUser.photoUrl?.toString()
+                
+                                val mediaUrls = postViewModel.uploadMediaFiles(selectedMediaUris, userId)
+                
+                                val post = Post(
+                                    id = "", // Firestore will assign the ID
+                                    userId = userId,
+                                    username = username,
+                                    userProfileImage = userProfileImage,
                                     title = title,
                                     location = location,
                                     date = date,
+                                    timestamp = System.currentTimeMillis(),
                                     vScale = vScale.toInt(),
                                     isIndoor = isIndoor,
                                     notes = notes,
                                     description = notes,
-                                    mediaUrls = urls
+                                    mediaUrls = mediaUrls
                                 )
-                                postViewModel.saveActivePost()
-                                selectedMediaUris = emptyList()
+                
+                                val result = postViewModel.createPost(post)
+                
+                                if (result.isSuccess) {
+                                    postViewModel.saveActivePost()
+                                    selectedMediaUris = emptyList()
+                                    // Clear form
+                                    title = ""
+                                    location = ""
+                                    notes = ""
+                                    vScale = 4f
+                                    isIndoor = true
+                                    showSuccessMessage = true
+                                } else {
+                                    uploadError = result.exceptionOrNull()?.message ?: "Failed to create post"
+                                }
+                
                             } catch (e: Exception) {
                                 uploadError = e.localizedMessage ?: "Failed to upload media."
                             } finally {

@@ -58,32 +58,65 @@ class PostViewModel : ViewModel() {
         return urls
     }
 
-    fun createPost(
-        title: String,
-        location: String,
-        date: String,
-        vScale: Int,
-        isIndoor: Boolean,
-        notes: String,
-        description: String = notes,
-        mediaUrls: List<String> = emptyList()
-    ) {
-        val newPost = Post(
-            id = UUID.randomUUID().toString(),
-            userId = "current_user", // TODO: Get from auth
-            username = "Me", // TODO: Get from auth
-            title = title,
-            location = location,
-            date = date,
-            timestamp = System.currentTimeMillis(),
-            vScale = vScale,
-            isIndoor = isIndoor,
-            notes = notes,
-            description = description,
-            mediaUrls = mediaUrls
-        )
-        _activePost.value = newPost
+    suspend fun createPost(post: Post): Result<String> {
+        val data = buildMap<String, Any> {
+            put("uid", post.userId)
+            put("username", post.username)
+            post.userProfileImage?.let { put("userProfileImage", it) }
+            put("title", post.title)
+            put("location", post.location)
+            put("date", post.date)
+            put("vScale", post.vScale)
+            put("isIndoor", post.isIndoor)
+            put("notes", post.notes)
+            put("description", post.description)
+            put("mediaUrls", post.mediaUrls)
+        }
+    
+        return try {
+            val result = FirebaseConfig.functions
+                .getHttpsCallable("createPost")
+                .call(data)
+                .await()
+    
+            val postId = (result.data as? Map<*, *>)?.get("postId") as? String
+            if (postId != null) {
+                Result.success(postId)
+            } else {
+                Result.failure(Exception("Missing postId in response"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+    
+
+    // fun createPost(
+    //     title: String,
+    //     location: String,
+    //     date: String,
+    //     vScale: Int,
+    //     isIndoor: Boolean,
+    //     notes: String,
+    //     description: String = notes,
+    //     mediaUrls: List<String> = emptyList()
+    // ) {
+    //     val newPost = Post(
+    //         id = UUID.randomUUID().toString(),
+    //         userId = "current_user", // TODO: Get from auth
+    //         username = "Me", // TODO: Get from auth
+    //         title = title,
+    //         location = location,
+    //         date = date,
+    //         timestamp = System.currentTimeMillis(),
+    //         vScale = vScale,
+    //         isIndoor = isIndoor,
+    //         notes = notes,
+    //         description = description,
+    //         mediaUrls = mediaUrls
+    //     )
+    //     _activePost.value = newPost
+    // }
 
     fun saveActivePost() {
         _activePost.value?.let { post ->
